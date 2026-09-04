@@ -4,8 +4,8 @@ Design baseline: the two original root documents. Milestones are acceptance driv
 
 | Phase | Deliverable | Exit gate | State |
 | --- | --- | --- | --- |
-| 0 — Foundation | Repository, pinned stack, architecture, progress log, build and CI | Reproducible install/build and committed baseline | In progress |
-| 1 — Playable POC | Authored station, first-person movement/collision, two-fuse power puzzle, readable clues, simple train escape, ambience, pause/settings/save | Fresh run reaches POC ending; recovery and collision checks pass; browser preview available | In progress |
+| 0 — Foundation | Repository, pinned stack, architecture, progress log, build and CI | Reproducible install/build and committed baseline | Complete locally; hosted CI awaits a remote |
+| 1 — Playable POC | Authored station, first-person movement/collision, two-fuse power puzzle, readable clues, simple train escape, ambience, pause/settings/save | Fresh run reaches POC ending; recovery and collision checks pass; browser preview available | Complete; ready for user playtest |
 | 2 — Complete escape loop | Three connected puzzles, retained notes, local checkpoint migration, generous countdown, two evidence-based endings | Both endings reachable; all wrong puzzle inputs recoverable; menus suspend timers | Planned |
 | 3 — Threat and atmosphere | Six-state enemy, occluded sight, navigable routes, hiding, distractions, scripted events, spatial sound, packaged voices | Enemy cannot see through walls; hiding/noise rules fair; capture restores consistent progress | Planned |
 | 4 — Polish and accessibility | Materials/assets, staged hints, voice/effects controls, captions, motion/flicker options, low quality preset | Clues readable; all critical sounds captioned; asset licences recorded; settings persist | Planned |

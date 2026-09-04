@@ -2,7 +2,9 @@
 
 A first-person atmospheric escape game set in a fictional Indian metro station. Built for desktop browsers with TypeScript, Three.js, Rapier, and Vite.
 
-**Current milestone: POC / playable foundation, under development.** This is not a production release. See [progress](docs/PROGRESS.md) for the verified state and [roadmap](docs/ROADMAP.md) for release gates.
+**Current milestone: v0.1.0 / playable POC.** Explore the station, recover two fuses, restore the emergency circuits, and dispatch your escape train. This is not a production release. See [progress](docs/PROGRESS.md) for the verified state and [roadmap](docs/ROADMAP.md) for release gates.
+
+![Last Metro playable station](docs/media/poc-title.png)
 
 ## Development
 
@@ -14,6 +16,40 @@ npm run dev
 ```
 
 Open the local URL printed by Vite in a desktop browser. Audio and mouse capture begin after a player gesture. Chrome is the initial automated test target; Safari needs a manual validation pass before support is claimed.
+
+For a preview of the built game:
+
+```sh
+npm run build
+npm run preview -- --port 4173 --strictPort
+```
+
+Open [the local preview](http://127.0.0.1:4173). The server must be running. Checkpoints and settings are local to each browser and origin, so the dev server and built preview have separate saves.
+
+## Controls
+
+| Input | Action |
+| --- | --- |
+| W / A / S / D | Move |
+| Mouse | Look; hold and drag if pointer capture is unavailable |
+| Shift | Sprint |
+| C | Toggle crouch |
+| E | Inspect, collect, or operate |
+| F | Toggle flashlight |
+| Tab | Open journal; use Tab to navigate menu controls |
+| Escape | Pause or close a menu |
+
+Read the engineer’s note on the right platform wall first. A full route is recorded in [QA](docs/QA.md) if you get stuck. There is no active pursuing enemy in this POC.
+
+## Validation
+
+```sh
+npm run check
+npx playwright install chromium
+npm run test:e2e
+```
+
+The first command checks types, state tests, formatting, and the build. Browser checks cover progression, collision, focus/pause, saves, settings, and a continuous navigation route. See [QA](docs/QA.md) for the measured environment and remaining release gates.
 
 ## Project map
 
