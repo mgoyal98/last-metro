@@ -2,9 +2,9 @@
 
 A first-person atmospheric escape game set in a fictional Indian metro station. Built for desktop browsers with TypeScript, Three.js, Rapier, and Vite.
 
-**Current milestone: v0.1.0 / playable POC.** Explore the station, recover two fuses, restore the emergency circuits, and dispatch your escape train. This is not a production release. See [progress](docs/PROGRESS.md) for the verified state and [roadmap](docs/ROADMAP.md) for release gates.
+**Current milestone: v0.2.0 / complete escape-loop alpha.** Restore power, reconstruct staff access, verify conflicting departure evidence, and choose which train to board. Three puzzles and two endings are playable. This is not a production release. See [progress](docs/PROGRESS.md) for the verified state and [roadmap](docs/ROADMAP.md) for release gates.
 
-![Last Metro playable station](docs/media/poc-title.png)
+![Last Metro escape-loop alpha](docs/media/phase2-title.png)
 
 ## Development
 
@@ -39,7 +39,11 @@ Open [the local preview](http://127.0.0.1:4173). The server must be running. Che
 | Tab | Open journal; use Tab to navigate menu controls |
 | Escape | Pause or close a menu |
 
-Read the engineer’s note on the right platform wall first. A full route is recorded in [QA](docs/QA.md) if you get stuck. There is no active pursuing enemy in this POC.
+Read the engineer’s note on the right platform wall first. Clues and recording transcripts stay in your journal. A spoiler walkthrough is in [QA](docs/QA.md) if you get stuck. Active enemy pursuit is the next phase.
+
+The 18-minute departure window starts after 30 seconds of active orientation or your first collected item/note. Menus and focus loss pause time. Expiry preserves completed puzzles and clues and restores a safe checkpoint with a fresh window.
+
+POC saves migrate automatically: fuses, notes and restored power are retained, while the new access and departure puzzles start unsolved. The legacy save is kept intact; the alpha writes a separate version 2 save. Saves belong to the browser and origin used to play.
 
 ## Validation
 

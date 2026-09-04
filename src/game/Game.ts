@@ -14,7 +14,17 @@ import type { Screen } from "../ui/UI";
 import { readSettings, storeSettings } from "../ui/settings";
 import { Player } from "./player";
 import { initializePhysics } from "./physics";
-import { freshProgress, loadProgress, saveProgress, transition } from "./state";
+import {
+  advanceTime,
+  checkpointSpawn,
+  freshProgress,
+  hint,
+  loadProgress,
+  recoverProgress,
+  saveProgress,
+  transition,
+} from "./state";
+import { isNoteId } from "./puzzles";
 import type { Action, Progress } from "./state";
 
 export class Game {
@@ -79,6 +89,7 @@ export class Game {
     this.applySettings();
     this.resize();
     this.bindInput(canvas);
+    this.station.apply(this.state);
     this.show("title");
     this.ui.onAction = (action) => this.action(action);
     this.ui.onSettings = (key, value) => {
@@ -126,6 +137,9 @@ export class Game {
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) this.pause();
     });
+    window.addEventListener("pagehide", () => {
+      if (this.started) this.persist();
+    });
     document.addEventListener("pointerlockchange", () => {
       const captured = document.pointerLockElement === canvas;
       if (this.hasLock && !captured && this.active) this.pause();
@@ -155,7 +169,11 @@ export class Game {
         event.preventDefault();
         if (this.active) this.pause();
         else if (this.ui.screen === "settings") this.action("settings-back");
-        else if (this.ui.screen !== "title" && this.ui.screen !== "ending")
+        else if (
+          this.ui.screen !== "title" &&
+          this.ui.screen !== "ending" &&
+          this.ui.screen !== "expired"
+        )
           this.resume();
         return;
       }
@@ -182,6 +200,14 @@ export class Game {
       this.show("note", action.slice(5));
       return;
     }
+    if (action === "board:09" || action === "board:99") {
+      this.commit({
+        type: "board",
+        service: action === "board:09" ? "09" : "99",
+      });
+      if (this.state.completed) this.show("ending");
+      return;
+    }
     switch (action) {
       case "start":
         this.begin(freshProgress());
@@ -202,6 +228,57 @@ export class Game {
         this.begin(this.saved ?? loadProgress() ?? freshProgress());
         this.ui.toast("Checkpoint restored.");
         break;
+      case "recover":
+        this.begin(recoverProgress(this.saved ?? this.state));
+        this.ui.toast("Checkpoint restored. A fresh 18-minute window is open.");
+        break;
+      case "access": {
+        const result = transition(this.state, {
+          type: "access",
+          code: this.ui.accessCode(),
+        });
+        if (!result.controlUnlocked) {
+          this.ui.feedback(
+            "Access denied. Check the shift record, locker assignment and stored access format. Try again.",
+          );
+          return;
+        }
+        const wasUnlocked = this.state.controlUnlocked;
+        this.commit({ type: "access", code: this.ui.accessCode() });
+        if (!wasUnlocked) this.commit({ type: "note", id: "falsePA" });
+        this.resume();
+        this.audio.cue("door");
+        this.ui.toast(
+          this.persistentStorage
+            ? "Control unlocked. Checkpoint saved. The live PA transcript is in your journal."
+            : "Control unlocked. Session checkpoint only. The PA transcript is in your journal.",
+        );
+        if (!wasUnlocked)
+          this.say(
+            "LIVE PA: “The old route is cancelled. Service 99, Bay B, will take you Home. You can trust me.”",
+            12,
+          );
+        break;
+      }
+      case "dispatch": {
+        const sequence = this.ui.sequence();
+        const result = transition(this.state, { type: "dispatch", sequence });
+        if (!result.dispatched) {
+          this.ui.feedback(
+            "Interlock rejected the sequence. Nothing was consumed. Read the 23:58 archive for the order.",
+          );
+          return;
+        }
+        this.commit({ type: "dispatch", sequence });
+        this.resume();
+        this.audio.cue("power");
+        this.caption("[ The PA cuts out. Two boarding relays engage. ]");
+        this.say(
+          "DEPARTURE TERMINAL: Boarding is enabled at Bays A and B. Verify the service against your records.",
+          9,
+        );
+        break;
+      }
       case "settings":
         this.settingsReturn = this.ui.screen === "title" ? "title" : "pause";
         this.show("settings");
@@ -243,12 +320,13 @@ export class Game {
     }
   }
   private begin(state: Progress): void {
-    this.state = state.completed ? freshProgress() : state;
+    this.state = state.completed
+      ? freshProgress()
+      : state.remainingSeconds <= 0
+        ? recoverProgress(state)
+        : state;
     this.station.apply(this.state);
-    this.player.reset(
-      this.state.powered ? 12 : 1.5,
-      this.state.powered ? -9 : 15,
-    );
+    this.player.reset(...checkpointSpawn(this.state));
     this.elapsed = 0;
     this.subtitleRemaining = 0;
     this.captionRemaining = 0;
@@ -266,6 +344,7 @@ export class Game {
     this.caption("[ Fluorescent hum. A train idles in the dark. ]");
   }
   private show(screen: Screen, note?: string): void {
+    if (this.active && this.started && screen !== "playing") this.persist();
     this.active = screen === "playing";
     if (!this.active) {
       this.player.keys.clear();
@@ -284,6 +363,10 @@ export class Game {
   private resume(): void {
     if (!this.started) {
       this.show("title");
+      return;
+    }
+    if (this.state.remainingSeconds <= 0) {
+      this.show("expired");
       return;
     }
     this.show("playing");
@@ -329,40 +412,25 @@ export class Game {
       this.ui.toast(
         `Fuse ${target.id === "amber" ? "A · amber" : "B · blue"} recovered. ${this.persistentStorage ? "Checkpoint saved." : "Session checkpoint only."}`,
       );
-    } else if (target.id === "diagram" || target.id === "map") {
+    } else if (isNoteId(target.id)) {
       this.commit({ type: "note", id: target.id });
       this.show("note", target.id);
     } else if (target.id === "cabinet") this.show("cabinet");
+    else if (target.id === "access") this.show("access");
     else if (target.id === "dispatch") {
-      if (!this.state.powered) {
-        this.ui.toast("Departure controls have no power.");
+      if (!this.state.controlUnlocked) {
+        this.ui.toast("Control access is locked.");
         return;
       }
-      if (this.state.dispatched) {
-        this.ui.toast("Train ready. Return to Platform 09.");
-        return;
-      }
-      this.commit({ type: "dispatch" });
-      this.audio.cue("power");
-      this.caption("[ The departure relay engages ]");
-      this.say(
-        "PA SYSTEM: “Service 09 for Daybreak is ready. Board on the platform. Mind the gap.”",
-        9,
-      );
-      this.ui.toast(
-        this.persistentStorage
-          ? "Departure authorised. Checkpoint saved."
-          : "Departure authorised. Session checkpoint only.",
-      );
-    } else if (target.id === "train") {
+      this.show("dispatch");
+    } else if (target.id === "train" || target.id === "falseTrain") {
       if (!this.state.dispatched) {
         this.ui.toast(
           "The train doors are locked. Restore power, then authorise departure in Control.",
         );
         return;
       }
-      this.commit({ type: "board" });
-      this.show("ending");
+      this.show("boarding", target.id === "train" ? "09" : "99");
     }
   }
   private findTarget(): Target | null {
@@ -411,6 +479,7 @@ export class Game {
         this.player.update(1 / 60, this.settings);
         this.accumulator -= 1 / 60;
         this.elapsed += 1 / 60;
+        this.state = advanceTime(this.state, 1 / 60);
         if (this.subtitleRemaining > 0) {
           this.subtitleRemaining -= 1 / 60;
           if (this.subtitleRemaining <= 0) this.ui.clearAnnouncement();
@@ -419,6 +488,12 @@ export class Game {
           this.captionRemaining -= 1 / 60;
           if (this.captionRemaining <= 0) this.ui.caption("");
         }
+        if (this.state.remainingSeconds <= 0) break;
+      }
+      if (this.state.remainingSeconds <= 0) {
+        this.show("expired");
+        this.renderer.render(this.station.scene, this.camera);
+        return;
       }
       this.flashlight.visible = this.player.flashlight;
       this.flashlight.intensity =
@@ -440,15 +515,7 @@ export class Game {
       }
       if (this.elapsed > this.nextHint) {
         this.nextHint = this.elapsed + 90;
-        this.ui.toast(
-          this.state.dispatched
-            ? "The boarding point is near where you woke up on Platform 09."
-            : this.state.powered
-              ? "The service corridor leads north from the ticket hall to Control."
-              : this.state.fuses.length < 2
-                ? "Look for glowing fuses on the platform bench and the ticket hall workbench."
-                : "Check your journal: the engineer left the circuit routing instructions.",
-        );
+        this.ui.toast(hint(this.state));
       }
       this.currentTarget = this.findTarget();
       this.ui.interaction(this.currentTarget?.label ?? null);
@@ -513,6 +580,13 @@ export class Game {
       place: (x: number, z: number, yaw = 0) => {
         this.player.reset(x, z);
         this.player.yaw = yaw;
+      },
+      setRemaining: (seconds: number) => {
+        this.state = {
+          ...this.state,
+          orientationSeconds: 0,
+          remainingSeconds: seconds,
+        };
       },
       dispose: () => {
         this.destroyed = true;

@@ -1,36 +1,36 @@
-# POC validation record
+# Phase 2 validation record
 
-Date: 2026-09-05. Build: 0.1.0 / playable foundation.
+Date: 2026-09-05. Build: 0.2.0 / complete escape-loop alpha. The original POC record is preserved in [QA-POC.md](QA-POC.md).
 
 ## Environment
 
-- macOS 26.4.1 (25E253).
-- Google Chrome 152.0.7977.76, driven by Playwright 1.62.1.
-- Automated WebGL checks use ANGLE / SwiftShader software rendering at 1440 × 900; compact layout is checked at 900 × 600.
-- Node 24.16.0, npm 11.17.0. Exact application dependencies are in `package-lock.json`.
-- This is not a hardware frame-rate benchmark. Native Safari, manual mouse comfort, perceived audio quality, and a named hardware reference remain release gates.
+- macOS 26.4.1 (25E253), Google Chrome 152.0.7977.76, Playwright 1.62.1.
+- Automated WebGL uses ANGLE / SwiftShader at 1440 × 900; compact layout at 900 × 600.
+- Node 24.16.0, npm 11.17.0. Dependencies remain exactly pinned in `package-lock.json`.
+- This verifies automated functional behavior, not real-GPU frame rate, native Safari support, mouse comfort, or perceived audio quality.
 
-## Automated checks
+## Results
 
 | Check | Result |
 | --- | --- |
-| Strict TypeScript | Pass |
-| Game-state tests | 13 passed: correct progression, all incorrect routing combinations, duplicate interactions, corrupt/impossible saves |
-| Audio regression | 1 passed: master gain returns to the selected volume after pause/resume |
-| Formatting | Pass |
-| Production bundle | Pass |
-| Browser: complete interaction flow | Pass; both fuses, wrong/correct routing, dispatch, POC ending; no uncaught JS errors |
-| Browser: movement and collision | Pass; player moves, platform wall and locked service gate block movement |
-| Browser: pause and focus | Pass; journal suspends simulation; focus loss opens pause |
-| Browser: persistence | Pass; fuse survives reload, settings survive reload, corrupt save recovers |
-| Browser: visual views | Pass; all four screenshots generated, title/platform visually inspected, ending/compact controls checked by browser assertions |
-| Browser: storage unavailable | Pass; in-session checkpoint restores the recovered fuse; active subtitle survives pause/resume |
-| Browser: continuous route | Pass; keyboard-controlled navigation reaches every mandatory interaction and the ending without teleporting |
-| Built-asset browser smoke | Pass; built assets load, Start and Pause work, objective appears, no JS/network failures, no development test bridge |
+| Strict TypeScript, formatting, production build | Pass |
+| State tests | 26 passed: all three puzzles, 27 switch combinations, incorrect access/routing, both endings, timer boundaries, recovery, corrupt saves and migration |
+| Audio regression | 1 passed: master volume restores after pause/resume |
+| Fresh run → Departure | Pass; all clues collected, wrong inputs retried, three puzzles solved, physical Bay A interaction and boarding |
+| Fresh run → Loop | Pass; same complete puzzle flow, physical Bay B interaction and boarding |
+| Countdown expiry | Pass; expiry screen blocks resume, safe Control checkpoint and clues restore with a fresh window, dispatch remains possible |
+| Countdown suspension | Pass; notes, inventory, cabinet, access, settings, pause/focus, dispatch and boarding menus freeze remaining time |
+| Movement/collision | Pass; platform wall and service gate block movement; crouch and flashlight controls respond |
+| Persistence/settings/corruption | Pass; items and settings survive reload, corrupt v2 save offers a fresh start |
+| Storage blocked | Pass; session checkpoint retains a fuse; paused announcement restores |
+| POC migration and Control gate | Pass; discoveries migrate, access remains unsolved, the locked gate blocks movement, unlocked gate permits crossing after reload, and restart restores the gate |
+| Continuous authored route | Pass; all required clues and puzzle controls reached by keyboard movement, followed by return to Bay A and Departure, without teleporting |
+| Visual checks | Title, evidence panel, both endings and built departure panel inspected; platform/compact screenshots generated and controls asserted |
+| Built-asset smoke | Pass; fresh start, pause, v2 Control checkpoint, E interaction and departure sequence work; no JS/network errors; test bridge absent |
 
-Browser tests use an explicit `?test` bridge only in Vite development mode. Most tests position the player near targets and use real E/menu interactions. The continuous-route test walks with keyboard input through every required connection without teleporting. The bridge is eliminated from the production bundle.
+All 10 browser cases passed across the initial suite and final focused rerun. The migration case originally used a one-second movement delay that finished before crossing under software rendering; the replacement waits for the crossing and measures closed-gate movement in simulation time. A development-server reload caused by editing source during the first continuous-route run returned it to the title screen. With runtime source held stable, both focused reruns passed (20.1s migration/gates; 54.3s continuous route).
 
-Six browser cases passed across the initial suite and targeted rerun. The subtitle recovery test originally sampled before the announcement appeared under software rendering; replacing the fixed delay with an explicit subtitle condition resolved that test failure. The final route also passed after its waypoints were given additional clearance around the workbench.
+Most browser tests use the explicitly enabled development bridge (`?test`) to position the player near targets, then press E and operate real UI controls. The continuous-route test uses keyboard movement through the entire station without teleporting. Timing tests shorten a development-only clock. Those helpers are compiled out of the production build.
 
 ## Reproduce
 
@@ -41,29 +41,30 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-To use an installed Chrome on this Mac instead of downloading Playwright Chromium:
+On this Mac, the installed Chrome can be used directly:
 
 ```sh
 CHROME_PATH='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' npm run test:e2e
 ```
 
-CI performs the same static/unit/build checks and Chromium browser suite. Its hosted execution remains unverified until a remote repository is connected and a workflow runs there.
+Do not edit runtime source during a browser run: Vite reloads the game. CI is configured to run static, unit, build and Chromium browser checks; hosted CI remains unverified until a remote repository is configured.
 
-## Manual POC route
+## Walkthrough — spoilers
 
-1. Start a new journey. Read the engineer’s note on the right platform wall with E.
-2. Collect amber fuse A from the platform bench just ahead.
-3. Enter the ticket hall through the opening beside its overhead sign. Go around the ticket barriers.
-4. Collect blue fuse B from the workbench near the service door.
-5. Use the circuit cabinet on the far wall. Set A to **Service**, B to **Departure**, then restore power.
-6. Walk through the now-open service corridor into Control. Use the brass switch on the desk front.
-7. Return through the ticket hall to the platform. Use the **Board** sign beside the train near the starting area.
+1. Read the engineer’s note on the platform wall. Collect fuse A from the platform bench.
+2. Read the printed route map farther along the same wall. It identifies service **09**, **Daybreak**, **00:09**, **Bay A**.
+3. Enter the ticket hall and go around the barriers. Collect fuse B from the workbench near the service door.
+4. Read the shift record on the far wall: **night shift 48**. At the circuit cabinet, route **A → Service**, **B → Departure** and restore power.
+5. In Maintenance, inspect the PA recorder on the left wall: the code is **shift then locker**, two digits each. The locker card farther along gives **17**.
+6. Enter **4817** at the terminal beside the Control door. The live PA falsely advertises service **99**, **Home**, **Bay B**; its transcript is retained automatically.
+7. In Control, read the archived 23:58 recording on the west wall. It independently confirms **09 / Daybreak / 00:09 / A** and lists the departure sequence.
+8. Inspect the live service board on the right-hand desk monitor. It lists both requests; compare with the archive and printed map.
+9. Operate the brass departure control on the desk front. Set **Isolate PA → Set signal → Release brakes**, then execute.
+10. Return to the platform. Bay A is near the original spawn; Bay B is north, beyond the ticket hall opening. Inspect a boarding point and board **09 for Departure** or **99 for Loop**. Opening the journal or backing away remains possible before boarding.
 
-## Performance and release follow-up
+## Release follow-up
 
-- Initial minified transfer is approximately 3.43 MB uncompressed / 1.24 MB gzip. Most is Rapier's compatibility package with embedded WASM (~2.85 MB / 1.09 MB gzip); Three.js is ~521 KB / 130 KB gzip. The bundler's large-chunk warning is retained and tracked. Measure cold load and consider a separate WASM asset in the polish phase.
-- Geometry/material batching, texture scale improvements, richer station props, spatial audio and commissioned voice assets remain later work.
-- Some environmental status signs remain static in the POC; the objective, circuit panel feedback, gate and completion state are authoritative. Synchronize every display with live departure state during the full-loop phase.
-- The POC has no departure timer, active enemy pursuit, hiding/distraction system, access-code puzzle, evidence puzzle, capture recovery, or branching endings. The final screen explicitly describes this boundary.
-- Playtest route clarity, puzzle pacing, screen brightness, mouse look, audio levels, and motion comfort with the user before phase 2.
-- Safari and Chromium on an identified hardware reference must pass full playthroughs and performance measurements before production support is claimed.
+- Approximately 3.44 MB minified / 1.25 MB gzip initial assets. Rapier's embedded-WASM compatibility chunk accounts for ~2.85 MB / 1.09 MB gzip. The bundler's large-chunk warning remains tracked for cold-load/packaging optimization.
+- The 18-minute window is intentionally generous. Actual first-playthrough duration and pressure need user playtesting and retuning after active enemy behavior is introduced.
+- Voice recordings are currently readable, retained transcripts. Active enemy AI, hiding/distractions, capture recovery, spatial audio, voice assets and final horror/presentation polish remain later phases.
+- Cross-browser support requires full native Safari and Chromium runs on an identified hardware reference, with measured performance. No public deployment, Git remote, or hosted CI run is claimed.

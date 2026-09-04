@@ -1,6 +1,8 @@
 # Phase 2 — Complete escape loop
 
-Status: in development, 2026-09-05. Scope authorised by “next phase”.
+Status: complete locally, 2026-09-05. Scope authorised by “next phase”. Release marker: `v0.2.0-alpha`.
+
+Validation: 27 unit tests, all 10 browser cases across the suite/focused rerun, strict types, formatting, production build, built-asset smoke, and visual panel review passed. See `docs/QA.md`. Active threat and production browser/performance validation remain later gates.
 
 ## Playable sequence
 

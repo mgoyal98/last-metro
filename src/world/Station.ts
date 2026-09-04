@@ -18,10 +18,18 @@ import {
 import type RAPIER from "@dimforge/rapier3d-compat";
 import type { Physics } from "../game/physics";
 import type { Progress } from "../game/state";
+import type { NoteId } from "../game/puzzles";
 import { signTexture, surface } from "./materials";
 
 export type TargetId =
-  "amber" | "blue" | "diagram" | "map" | "cabinet" | "dispatch" | "train";
+  | NoteId
+  | "amber"
+  | "blue"
+  | "cabinet"
+  | "access"
+  | "dispatch"
+  | "train"
+  | "falseTrain";
 export interface Target {
   id: TargetId;
   label: string;
@@ -37,6 +45,10 @@ export class Station {
   readonly lamps: Mesh[] = [];
   private gate: Mesh;
   private gateCollider: RAPIER.Collider | null = null;
+  private controlGate: Mesh;
+  private controlCollider: RAPIER.Collider | null = null;
+  private readonly displays = new Map<string, Mesh>();
+  private displayState = "";
   private shadow = new Group();
   private serviceLight: PointLight;
   private panelLight: Mesh;
@@ -114,7 +126,7 @@ export class Station {
       0.75,
       -Math.PI / 2,
     );
-    this.sign(
+    const departureBoard = this.sign(
       ["LAST SERVICE", "00:09     —     AWAITING POWER"],
       4.94,
       2.6,
@@ -125,6 +137,7 @@ export class Station {
       "#ecc680",
       "#111b18",
     );
+    this.displays.set("departure", departureBoard);
     this.sign(
       ["EXIT CLOSED", "USE AUTHORISED DEPARTURE"],
       0,
@@ -143,10 +156,16 @@ export class Station {
       this.box(-7.5, -0.28, z, 3.5, 0.13, 0.2, this.concrete, false);
     for (const x of [-8.6, -6.4])
       this.box(x, -0.13, -2, 0.12, 0.16, 44, this.metal, false);
-    this.box(-8.1, 1.5, -2, 3.8, 3.15, 38, this.metal, false);
-    this.box(-6.18, 1.04, -2, 0.05, 0.19, 38, this.brass, false);
-    this.box(-8.1, 3.08, -2, 3.4, 0.22, 37.7, this.dark, false);
-    for (const z of [-17, -11, -5, 1, 7, 13]) {
+    // Two distinct trains with a visible gap between their occupied bays.
+    for (const [center, length] of [
+      [-12, 20],
+      [9.5, 19],
+    ]) {
+      this.box(-8.1, 1.5, center, 3.8, 3.15, length, this.metal, false);
+      this.box(-6.18, 1.04, center, 0.05, 0.19, length, this.brass, false);
+      this.box(-8.1, 3.08, center, 3.4, 0.22, length - 0.3, this.dark, false);
+    }
+    for (const z of [-18, -12, -6, 2, 8, 14]) {
       this.box(-6.14, 2.13, z, 0.05, 0.97, 2.9, this.dark, false);
       this.box(
         -6.1,
@@ -169,7 +188,7 @@ export class Station {
       this.box(-6.01, 1.5, z + 2.25, 0.035, 2.55, 0.035, this.dark, false);
     }
     this.sign(
-      ["09  ANTIM NAGAR"],
+      ["09  DAYBREAK  /  BAY A"],
       -6.02,
       2.93,
       10,
@@ -188,7 +207,49 @@ export class Station {
       0.65,
       Math.PI / 2,
     );
-    this.target("train", "Board the last metro", train, [-3, 9.2]);
+    this.target(
+      "train",
+      "Inspect boarding · service 09 · Bay A",
+      train,
+      [-3, 9.2],
+    );
+    this.displays.set("train", train);
+    this.sign(
+      ["99  HOME  /  BAY B"],
+      -6.02,
+      2.93,
+      -10,
+      3.7,
+      0.32,
+      Math.PI / 2,
+      "#ecc680",
+      "#101715",
+    );
+    const falseTrain = this.sign(
+      ["BAY B · SERVICE 99", "AWAITING DISPATCH"],
+      -4.96,
+      1.65,
+      -9.2,
+      1.6,
+      0.65,
+      Math.PI / 2,
+    );
+    this.target(
+      "falseTrain",
+      "Inspect boarding · service 99 · Bay B",
+      falseTrain,
+      [-3, -9.2],
+    );
+    this.displays.set("falseTrain", falseTrain);
+    this.sign(
+      ["← BAY B / 99     ·     BAY A / 09 →"],
+      0.2,
+      3.3,
+      -1.5,
+      4.8,
+      0.5,
+    );
+
     // Ticket hall and shuttered kiosk.
     this.box(10, -0.2, 0, 10, 0.4, 14, this.floor);
     this.box(10, 4.35, 0, 10, 0.3, 14, this.concrete);
@@ -292,6 +353,18 @@ export class Station {
       false,
     );
     this.target("blue", "Collect fuse B · blue", blue, [13.1, -3.8]);
+    const shift = this.sign(
+      ["NIGHT SHIFT RECORD", "R. SEN / STAFF ACCESS"],
+      14.82,
+      1.8,
+      -1.6,
+      1.25,
+      0.85,
+      -Math.PI / 2,
+      "#253936",
+      "#c4bea3",
+    );
+    this.target("shift", "Read the shift record", shift, [13, -1.6]);
     // Maintenance corridor and control room.
     this.box(12, -0.2, -13, 4, 0.4, 12, this.floor);
     this.box(12, 3.35, -13, 4, 0.3, 12, this.concrete);
@@ -304,6 +377,54 @@ export class Station {
     this.serviceLight = this.point(12, 2.8, -13, "#d9ba7a", 0.5, 14);
     for (const x of [10.3, 10.55])
       this.box(x, 2.9, -13, 0.07, 0.07, 12, this.metal, false);
+    this.box(10.25, 1.4, -9.8, 0.4, 0.9, 0.8, this.metal);
+    const recorder = this.sign(
+      ["PA RECORDER", "STORED 23:41 / TRANSCRIPT"],
+      10.46,
+      1.6,
+      -9.8,
+      0.75,
+      0.45,
+      Math.PI / 2,
+    );
+    this.target(
+      "recording",
+      "Replay access-format recording",
+      recorder,
+      [12, -9.8],
+    );
+    this.box(10.3, 1.05, -13.3, 0.5, 2.1, 1.3, this.metal);
+    const locker = this.sign(
+      ["LOCKER 17", "R. SEN"],
+      10.57,
+      1.6,
+      -13.3,
+      0.8,
+      0.5,
+      Math.PI / 2,
+      "#253936",
+      "#c4bea3",
+    );
+    this.target("locker", "Read the locker assignment", locker, [12, -13.3]);
+    this.box(13.97, 1.65, -17, 0.12, 1.1, 1.1, this.metal);
+    const access = this.sign(
+      ["CONTROL ACCESS", "ENTER STAFF CODE"],
+      13.89,
+      1.8,
+      -17,
+      0.95,
+      0.65,
+      -Math.PI / 2,
+    );
+    this.target("access", "Use the staff access terminal", access, [12, -17]);
+    this.displays.set("access", access);
+    this.controlGate = this.box(12, 1.5, -19, 3.98, 3, 0.22, this.metal, false);
+    this.controlCollider = this.physics.box(12, 1.5, -19, 3.98, 3, 0.22);
+    this.solids.push(this.controlGate);
+    this.displays.set(
+      "control",
+      this.sign(["CONTROL", "STAFF CODE REQUIRED"], 12, 2.6, -18.85, 2.6, 0.6),
+    );
     this.box(12, -0.2, -22.2, 10, 0.4, 6.4, this.floor);
     this.box(12, 3.35, -22.2, 10, 0.3, 6.4, this.concrete);
     this.box(7, 1.6, -22.2, 0.3, 3.2, 6.4, this.tile);
@@ -316,7 +437,7 @@ export class Station {
     this.point(12, 2.8, -22, "#90bab0", 18, 11);
     for (const x of [10.4, 12, 13.6]) {
       this.box(x, 1.65, -24, 1.3, 0.8, 0.4, this.dark, false);
-      this.sign(
+      const monitor = this.sign(
         ["PLATFORM 09", "SIGNAL OFFLINE"],
         x,
         1.65,
@@ -327,6 +448,14 @@ export class Station {
         "#80b6a1",
         "#0b1a16",
       );
+      this.displays.set(`monitor:${x}`, monitor);
+      if (x === 13.6)
+        this.target(
+          "timetable",
+          "Read the live service board",
+          monitor,
+          [13.6, -21.8],
+        );
     }
     const dispatch = this.sign(
       ["AUTHORISE DEPARTURE", "SERVICE 09  /  DAYBREAK"],
@@ -349,6 +478,17 @@ export class Station {
     );
     this.target("dispatch", "Authorise train departure", button, [12, -21.7]);
     dispatch.name = "dispatch-label";
+    this.displays.set("dispatch", dispatch);
+    const archive = this.sign(
+      ["DISPATCH ARCHIVE", "STORED 23:58 / R. SEN"],
+      7.18,
+      1.8,
+      -21.8,
+      1.8,
+      0.9,
+      Math.PI / 2,
+    );
+    this.target("archive", "Replay the dispatch archive", archive, [9, -21.8]);
     // Non-pursuing silhouette, shown once the power is restored.
     const shadowMat = new MeshBasicMaterial({ color: "#050c0c" });
     const torso = new Mesh(new CylinderGeometry(0.22, 0.3, 1.2, 8), shadowMat);
@@ -461,9 +601,73 @@ export class Station {
     }
     if (!state.powered && !this.gateCollider)
       this.gateCollider = this.physics.box(12, 1.5, -7, 3.8, 3, 0.22);
+    this.controlGate.visible = !state.controlUnlocked;
+    if (state.controlUnlocked && this.controlCollider) {
+      this.physics.remove(this.controlCollider);
+      this.controlCollider = null;
+    }
+    if (!state.controlUnlocked && !this.controlCollider)
+      this.controlCollider = this.physics.box(12, 1.5, -19, 3.98, 3, 0.22);
+    const displayState = `${state.powered}:${state.controlUnlocked}:${state.dispatched}`;
+    if (displayState !== this.displayState) {
+      this.displayState = displayState;
+      this.updateDisplay("departure", [
+        "NIGHT SERVICES 09 / 99",
+        state.dispatched
+          ? "BAYS A + B READY / VERIFY SERVICE"
+          : state.powered
+            ? "AWAITING CONTROL AUTHORISATION"
+            : "AWAITING EMERGENCY POWER",
+      ]);
+      this.updateDisplay("train", [
+        "BAY A · 09 / DAYBREAK",
+        state.dispatched ? "00:09 / READY TO BOARD" : "AWAITING DISPATCH",
+      ]);
+      this.updateDisplay("falseTrain", [
+        "BAY B · 99 / HOME",
+        state.dispatched ? "00:00 / READY TO BOARD" : "AWAITING DISPATCH",
+      ]);
+      this.updateDisplay("access", [
+        "CONTROL ACCESS",
+        state.controlUnlocked ? "ACCESS GRANTED" : "ENTER STAFF CODE",
+      ]);
+      this.updateDisplay("control", [
+        "CONTROL",
+        state.controlUnlocked ? "ACCESS GRANTED" : "STAFF CODE REQUIRED",
+      ]);
+      this.updateDisplay("dispatch", [
+        "MANUAL DEPARTURE",
+        state.dispatched
+          ? "SEQUENCE COMPLETE / BOARDING OPEN"
+          : "CONSULT ARCHIVE / SET SEQUENCE",
+      ]);
+      this.updateDisplay("monitor:10.4", [
+        "09 / DAYBREAK",
+        state.powered ? "00:09 / BAY A" : "SIGNAL OFFLINE",
+      ]);
+      this.updateDisplay("monitor:12", [
+        "RELAY STATUS",
+        state.dispatched
+          ? "BOARDING ENABLED"
+          : state.powered
+            ? "AWAITING SEQUENCE"
+            : "SIGNAL OFFLINE",
+      ]);
+      this.updateDisplay("monitor:13.6", [
+        "LIVE SERVICES 09 + 99",
+        state.powered ? "READ TO VERIFY DEPARTURES" : "SIGNAL OFFLINE",
+      ]);
+    }
     this.serviceLight.intensity = state.powered ? 17 : 0.5;
     this.panelLight.material = state.powered ? this.glow : this.red;
     this.shadow.visible = state.powered && !state.dispatched;
+  }
+  private updateDisplay(id: string, lines: string[]): void {
+    const mesh = this.displays.get(id)!;
+    const material = mesh.material as MeshBasicMaterial;
+    material.map?.dispose();
+    material.map = signTexture(lines);
+    material.needsUpdate = true;
   }
   location(position: Vector3): string {
     if (position.x > 6 && position.z < -19) return "CONTROL ROOM";
