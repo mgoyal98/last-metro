@@ -4,7 +4,9 @@ Last updated: 2026-09-05
 
 ## Current milestone
 
-**Phase 0 + 1 complete locally — v0.1.0 playable POC, ready for user playtest.**
+**Phase 2 in development — complete escape loop.** Phase 0 + 1 remain recoverable at `v0.1.0-poc`.
+
+Current scope and exit gates: `docs/MILESTONE-02.md`. Implementing access/evidence puzzles, countdown/recovery, versioned-save migration, live signage, and both endings.
 
 Play the built preview at [127.0.0.1:4173](http://127.0.0.1:4173/) while the preview server is running. To restart it: `npm run build && npm run preview -- --port 4173 --strictPort`. See `README.md` for controls.
 
