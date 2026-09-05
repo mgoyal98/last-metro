@@ -4,9 +4,9 @@ Last updated: 2026-09-05
 
 ## Current milestone
 
-**Phase 2 complete locally — v0.2.0-alpha / complete escape loop.** Phase 0 + 1 remain recoverable at `v0.1.0-poc`.
+**Phase 3 in development — threat and atmosphere.** Phase 2 remains recoverable at `v0.2.0-alpha`; Phase 0 + 1 at `v0.1.0-poc`.
 
-Current scope and exit gates: `docs/MILESTONE-02.md`. Access/evidence puzzles, countdown/recovery, versioned-save migration, live signage, and both endings are implemented and verified.
+Current scope and exit gates: `docs/MILESTONE-03.md`. The validated escape loop is the baseline for enemy navigation, stealth, distractions, capture recovery and atmosphere.
 
 Play the built preview at [127.0.0.1:4173](http://127.0.0.1:4173/) while the preview server is running. To restart it: `npm run build && npm run preview -- --port 4173 --strictPort`. See `README.md` for controls.
 
