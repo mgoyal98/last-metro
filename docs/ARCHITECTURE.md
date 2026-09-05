@@ -16,11 +16,13 @@ Pure game-state transitions are independent of the renderer and testable without
 - `game/Enemy.ts`: six-state threat, hearing, awareness, hiding compromise and capture; no renderer dependencies.
 - `game/player.ts`: keyboard/mouse input, camera, movement intent.
 - `game/Game.ts`: lifecycle, simulation, interactions and checkpoints.
-- `world/`: scene construction, world-scaled procedural materials, static render batches, target metadata and articulated shadow presentation.
+- `world/`: scene construction, packaged and procedural materials, static render batches, target metadata and articulated shadow presentation.
+- `world/assets.ts`: same-origin texture/GLB loading, physical repeat scale and PBR colour-space conventions.
 - `world/Shadow.ts`: original capsule/primitive rig; actual enemy displacement drives limbs and a soft contact shadow.
 - `audio/`: HRTF positional effects, listener movement, wall muffling, master/effects/voice buses and pauseable local voice buffers; no runtime speech service.
 - `audio/voices.ts`: canonical original PA scripts, subtitles, file names and generous subtitle durations.
-- `public/audio/` and `scripts/generate-voices.mjs`: committed mono PCM assets and optional offline authoring.
+- `public/audio/` and `scripts/generate-google-voices.mjs`: committed mono PCM assets and optional Google authoring; credentials are read only by the local Node script.
+- `public/models/`, `public/textures/`, `assets/source/`: shipped render assets, editable Blender sources and exact provenance; `scripts/build-props.py` and `scripts/import-polyhaven.py` reproduce the visuals.
 - `ui/`: escaped/text-safe UI state, settings and menus; no framework needed for POC.
 - `ui/notes.ts`: authored, retained evidence and replayable recording transcripts. Evidence recordings remain readable transcripts; story PA announcements have bundled synthetic voices.
 
@@ -74,3 +76,13 @@ Hints have three levels: direction, location, then explicitly revealed solution.
 Settings keep the existing v1 key and validate added text-size, high-contrast and auto-reminder fields; absent values receive defaults. V2 puzzle saves remain unchanged. Dialogs have accessible names and wrapped keyboard focus. Large text applies to evidence, hints, settings, HUD and subtitles; high contrast includes paper clues and their controls. Subtitles, captions and toasts stack in a single region to avoid overlaps. Reduced-motion settings also suppress interface transitions.
 
 Audible PA clips lower the effects bus to 40% of its selected volume, then restore that volume after playback or cancellation. Muted voices do not duck effects. Context suspension remains responsible for pausing both voice and effects. Chase captions take priority over routine footsteps, while identical captions avoid repeated DOM text replacement. Automated checks cover these transitions; subjective mix/voice assessment remains a human playtest gate.
+
+## Phase 4A packaged assets
+
+`Game.create` waits for physics and `loadStationAssets` concurrently before constructing the station. Texture and GLB loads also run concurrently, followed by the existing shader preparation. A failed required asset propagates to the loading shell's reload action; partially loaded scenes never accept input.
+
+Poly Haven colour maps use sRGB; OpenGL normal and roughness maps use linear data. The existing two-metre box UV convention is adjusted to each material's physical repeat. The floor's imported roughness is clamped during authoring. Canvas signs remain separate to preserve exact lettering and readable DOM evidence.
+
+Blender props share loaded geometry/materials across cloned instances. Benches retain existing collider dimensions. The cabinet and kiosk have detached solid proxy meshes that stay `visible=true` with frozen world matrices for occlusion queries, while only their GLB render meshes enter the scene. Kiosk collision joins the same registry used by Rapier and enemy navigation. Mandatory target signs and changing indicators remain independent.
+
+Google authoring runs only through the Node script, using the ignored `.env.voices` file. Four normalized WAVs ship under `public/audio`, with complete request/output provenance outside the runtime. The local Whisper check is optional authoring tooling; neither its environment nor model weights enter the build. Save formats, transcripts, subtitle windows, voice gain and puzzle rules are unchanged.

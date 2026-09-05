@@ -1,6 +1,6 @@
 # Google voice authoring
 
-Status, 2026-09-05: the Google authoring script is prepared. No Google-generated audio has been produced or shipped yet because local API access is not configured. The preview still plays the four eSpeak recordings listed in [ASSETS.md](ASSETS.md).
+Status, 2026-09-06: **four Google-generated recordings are packaged in v0.4.1**. Local credentials worked, all shipped transcripts passed unprompted local recognition, and durations fit their subtitle windows. Provenance and signal measurements are in [ASSETS.md](ASSETS.md). Human listening remains a playtest gate; no subjective listening pass is claimed.
 
 ## Selected route
 
@@ -32,7 +32,7 @@ The script saves original PCM, finished mono 22,050 Hz / 16-bit WAV files and a 
 
 ## Finishing and integration
 
-Listen before promoting a candidate. Verify that it reads the exact transcript, pronounces 09/99 correctly, contains no spoken directions or unwanted sounds, and sounds intelligible through the PA filter. FFmpeg applies a restrained band-pass, short echo and level normalization. The current runtime voice gain must be checked with the new audio.
+For future takes, listen before final release approval. Verify that it reads the exact transcript, pronounces 09/99 correctly, contains no spoken directions or unwanted sounds, and sounds intelligible through the PA filter. FFmpeg applies a restrained band-pass, short echo and level normalization. The current runtime voice gain must be checked with the new audio.
 
 Once a take is selected:
 
@@ -47,6 +47,26 @@ There are no runtime Google requests: players load static audio from the same or
 
 Google's [Gemini terms](https://ai.google.dev/gemini-api/terms) say Google does not claim ownership of generated content; use remains subject to those terms and applicable law. On unpaid services, submitted content and generated responses may be used to improve Google's products. Send the original game scripts, never private user material or credentials. Recheck model availability, free-tier quotas and terms before future regeneration.
 
+## Local transcript verification
+
+The shipped clips were checked with faster-whisper 1.2.1 / `small.en` on CPU int8. The recognizer receives the audio without the expected script. All words match after ignoring case and punctuation; the report records each WAV hash and model revision. An initial misleading announcement was regenerated with clearer pauses around “Bay B.” The revised take passes the same independent check.
+
+Optional authoring setup with Python 3.12:
+
+```sh
+python3.12 -m venv assets/authoring.local
+assets/authoring.local/bin/pip install -r assets/source/voice-verification-requirements.txt
+assets/authoring.local/bin/python scripts/check-voices-local.py
+```
+
+The first run downloads public model weights; audio stays on the local machine. Subsequent checks can require the cached weights using `--offline`. The environment and model cache live in ignored `*.local` directories. The report is written to `assets/source/voice-transcript-check.json`; mismatched wording exits with an error for review. Model revision used for this milestone: `d1d751a5f8271d482d14ca55d9e2deeebbae577f`.
+
+Automatic approval review rejected a separate request to upload finished clips to Google for transcription. That request was not executed. Verification used the local recognizer instead.
+
 ## Validation boundary
 
-`npm run check` passes with 49 unit tests, strict types, formatting and the unchanged production build. Dry-run planning and four authoring tests cover exact-script preservation, multi-part PCM assembly, unsuccessful/truncated output and malformed audio rejection. A missing key fails before network access. Live Google generation, voice quality, final timing and integration remain unverified until a key is configured.
+The full unit suite has 49 passing cases, including four authoring checks for script preservation, multi-part PCM assembly, unsuccessful/truncated output and malformed audio rejection. Types, formatting and build pass. The Google API successfully generated all four chosen takes; two earlier dispatch attempts returned `OTHER` and were discarded. There is no automatic retry loop or paid-model fallback. Quota/billing status cannot be inferred from a successful response.
+
+All chosen WAVs pass local word, format, duration and peak checks. Browser decoding, subtitle bounds and audio suspension are checked by `npm run test:preview`; final run results are recorded in [QA](QA.md). Human assessment of delivery, intelligibility over ambience and mix preference remains open.
+
+The previous `scripts/generate-voices.mjs` remains an optional eSpeak NG 1.52.0 / FFmpeg fallback. It overwrites `public/audio`; it is not the source of the current Google recordings. If used, update the provenance and rerun validation before committing the replacement files. No authoring engine is required for normal builds.

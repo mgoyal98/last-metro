@@ -1,0 +1,25 @@
+{
+  "author": "Last Metro original project work",
+  "tool": "4.5.13 LTS",
+  "source": "scripts/build-props.py",
+  "models": [
+    {
+      "file": "platform-bench.glb",
+      "triangles": 1620,
+      "drawMeshes": 3,
+      "bytes": 78060
+    },
+    {
+      "file": "electrical-cabinet.glb",
+      "triangles": 756,
+      "drawMeshes": 4,
+      "bytes": 42244
+    },
+    {
+      "file": "ticket-machine.glb",
+      "triangles": 1836,
+      "drawMeshes": 5,
+      "bytes": 95292
+    }
+  ]
+}

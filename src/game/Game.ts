@@ -30,6 +30,7 @@ import { Enemy } from "./Enemy";
 import { distance, Navigation } from "./navigation";
 import type { Point } from "./navigation";
 import { VOICES } from "../audio/voices";
+import { loadStationAssets } from "../world/assets";
 
 export class Game {
   private readonly renderer: WebGLRenderer;
@@ -135,13 +136,16 @@ export class Game {
     canvas: HTMLCanvasElement,
     stage: (text: string) => void = () => {},
   ): Promise<Game> {
-    stage("Preparing movement and collision…");
-    const physics = await initializePhysics();
+    stage("Loading station surfaces, props and collision…");
+    const [physics, assets] = await Promise.all([
+      initializePhysics(),
+      loadStationAssets(),
+    ]);
     stage("Lighting the station…");
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => resolve()),
     );
-    const game = new Game(canvas, new Station(physics));
+    const game = new Game(canvas, new Station(physics, assets));
     game.station.scene.updateMatrixWorld(true);
     // Prepare both light configurations before accepting player input.
     await game.renderer.compileAsync(game.station.scene, game.camera);

@@ -1,24 +1,34 @@
-# Asset production follow-up
+# Phase 4A — asset production
 
-The v0.4.0 beta established the game loop and polished its procedural presentation. It has **no Poly Haven textures, Blender-authored models or Google voices**. The original tooling brief listed those workflows as optional additions. They were deferred while validating gameplay; they should not be described as completed art production.
+Build: **v0.4.1 POC**. This follows the user's request for Poly Haven, Blender and Google/free-tier speech authoring. The `v0.4.0-beta` milestone used procedural art and eSpeak; the new assets now exist and are integrated. This remains a GPT-6 capability POC.
 
-The user's 2026-09-05 feedback requests a better speech service and raises the missing visual asset workflow. Track this follow-up before the release-candidate phase.
-
-| Area | Current implementation | Follow-up |
+| Area | Implemented output | Verification |
 | --- | --- | --- |
-| Surfaces | Canvas-generated tile/metal colour and bump maps | Select Poly Haven tile, concrete and worn-metal PBR materials; record exact source, author, download variant and CC0 provenance before import |
-| Props | Three.js primitives | Use Blender for a small set of focal props: platform bench, ticket machine and electrical cabinet; retain editable source and export optimized GLB |
-| Signs and puzzle evidence | Canvas signs and readable DOM clues | Keep precise authored lettering and retained clue views when surrounding art changes |
-| Speech | eSpeak NG + FFmpeg; four local WAV files | Google AI Studio free-tier TTS authoring prepared; generation awaits local API access; see VOICE-AUTHORING.md |
+| Surfaces | Poly Haven Long White Tiles and Terrazzo Tiles; six packaged 1K maps | Published source MD5 and shipped SHA-256; explicit colour spaces, OpenGL normals, physical repeats and floor roughness finishing |
+| Props | Original Blender bench, electrical cabinet and ticket machine | Editable sources, material-grouped GLBs and triangle/size manifest; original cabinet/bench collision retained; kiosk added to shared registry |
+| Signs and evidence | Exact canvas lettering and DOM clue views retained | Cabinet label moved in front of its new doors; physical interaction and full-route regression coverage |
+| Speech | Four Google Gemini/Charon recordings from canonical scripts | Local unprompted transcription matches all words; signal checks and subtitle-duration bounds; browser decoding and pause/mix checks |
+| Cost | 2.58 MB textures, 0.22 MB GLBs, 1.21 MB audio | Fixed-view rendering and high/low preset evidence recorded in QA; hardware FPS and cold-network budgets remain phase 5 |
 
-Poly Haven's [asset licence](https://polyhaven.com/license) is CC0 and permits commercial redistribution. Blender has not been installed on this Mac; no `.blend` or GLB files have been produced. No visual assets have been selected or downloaded for this follow-up yet.
+Final browser/visual results and remaining human review are recorded in [QA](QA.md). The asset register carries [source and rights details](ASSETS.md). Authoring tools are optional; `npm ci` and `npm run build` use committed assets without credentials.
 
-## Asset-pass acceptance gates
+## Reproduce the visual assets
 
-- Start with one wall/floor material and one focal prop; review their appearance in the station before expanding the set.
-- Store shipped textures/models under `public/textures` and `public/models`; retain editable prop sources and reproduction notes under `assets/source` when the first model is created.
-- Use suitable web texture resolutions, inspect material colour spaces/normal conventions, and record transfer sizes. Preserve existing physics and interaction geometry when substituting render meshes.
-- Keep all clue surfaces readable. Verify physical E interactions, full keyboard traversal, shelter entrances and both endings after model integration.
-- Compare rendering/loading cost and high/low presets after real assets are installed; the current 313 → 71 draw-call comparison describes the procedural beta only.
-- Generate and listen to natural speech takes; verify every subtitle, duration and PA mix in-game. Commit chosen files with provenance.
-- Update QA/progress with actual evidence. Visual asset installation and speech generation remain open until those outputs exist and pass review.
+Requires Python 3 and FFmpeg 8.1 for material import, and Blender 4.5.13 LTS for props:
+
+```sh
+python3 scripts/import-polyhaven.py
+blender --background --factory-startup --python-exit-code 1 --python scripts/build-props.py
+```
+
+The importer downloads pinned originals into ignored `assets/polyhaven-cache.local`, verifies their published hashes, finishes six files into `public/textures`, and updates final hashes in `assets/source/polyhaven.json`. It sends a unique authoring User-Agent crediting Poly Haven. Players do not call the live Poly Haven API. Powered by [Poly Haven](https://polyhaven.com/).
+
+The Blender script creates project-original geometry, saves each editable source under `assets/source/models`, groups export meshes by material and writes GLBs under `public/models`. It also writes a triangle/mesh/size manifest. Open the `.blend` files in Blender to inspect or edit the source. A script rerun replaces those generated sources; preserve hand edits separately first.
+
+On the authoring Mac, official Blender 4.5.13 LTS for Apple Silicon was downloaded and run from a temporary read-only disk-image mount. No permanent Blender application installation was needed. The DMG matched the official SHA-256 list: `663ce944257c61ff1d6aa09e15c8f57bbd8d59023adb2fa7edde33a9ed960b53`. Source: [official 4.5 downloads](https://download.blender.org/release/Blender4.5/).
+
+## Review contract
+
+Keep all clue surfaces readable and interactions reachable. Changes to props must retain physical collision, enemy navigation and raycast occlusion; verify the continuous walking route, shelters and both endings. Startup waits for local models/textures, and failed downloads expose a reload action. Keep runtime source fixed during browser suites.
+
+Human listening to all announcement triggers, first-time playtests, native Safari and reference-hardware profiling remain phase-five release gates. Local recognition verifies wording, not dramatic delivery or perceived audio quality. No production-readiness claim follows from an asset import or successful build.

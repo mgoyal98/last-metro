@@ -12,14 +12,17 @@ export const VOICE = "Charon";
 export function speechRequest(id, clip) {
   const delivery =
     id === "falsePA"
-      ? "Quietly reassuring, with an unsettling familiarity."
+      ? 'Quietly reassuring, with an unsettling familiarity. Enunciate "route" clearly. Pause around the platform designation "Bay B", pronouncing Bay and the letter B as two distinct words.'
       : "Calm, measured and matter-of-fact, like a late-night station announcement.";
   return {
     contents: [
       {
         parts: [
           {
-            text: `Read only the transcript below, exactly as written. Use clear Indian English with natural pacing. ${delivery} Use an original fictional voice, with no impersonation. Speak service 09 as zero nine and service 99 as ninety-nine. Do not add music, effects, introductions or the directions themselves.\n\nTranscript:\n${clip.text}`,
+            text: `Read aloud in clear Indian English. ${delivery} Speak only the following transcript, without background sound.
+
+Transcript:
+${clip.text}`,
           },
         ],
       },
@@ -35,10 +38,14 @@ export function speechRequest(id, clip) {
 
 export function decodeSpeech(body) {
   const candidate = body.candidates?.[0];
-  if (candidate?.finishReason !== "STOP")
+  if (candidate?.finishReason !== "STOP") {
+    const reason = /^[A-Z_]{1,40}$/.test(candidate?.finishReason ?? "")
+      ? candidate.finishReason
+      : "NO_COMPLETE_CANDIDATE";
     throw new Error(
-      "Speech generation did not finish successfully. No candidate was saved.",
+      `Speech generation did not finish successfully (${reason}). No candidate was saved.`,
     );
+  }
   const chunks = (candidate.content?.parts ?? [])
     .filter((part) => part.inlineData)
     .map((part) => part.inlineData);

@@ -1,0 +1,88 @@
+{
+  "retrieved": "2026-09-06",
+  "sourceResolution": "1k",
+  "encoding": "FFmpeg: 1024 square; JPEG quality 2 with 4:4:4 sampling for color/roughness; lossless PNG for OpenGL normals",
+  "assets": [
+    {
+      "id": "long_white_tiles",
+      "name": "Long White Tiles",
+      "source": "https://polyhaven.com/a/long_white_tiles",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "authors": {
+        "Jenelle van Heerden": "processing",
+        "Sergej Majboroda": "photography"
+      },
+      "metresPerRepeat": 1.27,
+      "maps": {
+        "color": {
+          "size": 619644,
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/long_white_tiles/long_white_tiles_diff_1k.jpg",
+          "md5": "49f7e4c3a0afd9a8ca3df5ac75747353",
+          "output": "long_white_tiles_color.jpg",
+          "shippedBytes": 219517,
+          "shippedSha256": "3c7516d816d7e659a22a97893760ce7ac3cd82017be24db79449e8f23704704b",
+          "processing": "scale=1024:1024"
+        },
+        "normal": {
+          "size": 651009,
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/long_white_tiles/long_white_tiles_nor_gl_1k.jpg",
+          "md5": "7837ef3d13258d6ee2bf9ee928d48152",
+          "output": "long_white_tiles_normal.png",
+          "shippedBytes": 1414458,
+          "shippedSha256": "d83f930cf84d87b54513f3137dcdfbcb13fa42d2809cebbe4cfe72c887ba1c41",
+          "processing": "scale=1024:1024"
+        },
+        "roughness": {
+          "size": 491268,
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/long_white_tiles/long_white_tiles_rough_1k.jpg",
+          "md5": "d271d3837f7b6e9db9c3a565ff57c290",
+          "output": "long_white_tiles_roughness.jpg",
+          "shippedBytes": 142720,
+          "shippedSha256": "56880e2a25dbc535f890c6c39466179418f7cb38f4b9ae4fbf4c52f54f58ea4d",
+          "processing": "scale=1024:1024"
+        }
+      }
+    },
+    {
+      "id": "terrazzo_tiles",
+      "name": "Terrazzo Tiles",
+      "source": "https://polyhaven.com/a/terrazzo_tiles",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "authors": {
+        "Amal Kumar": "All"
+      },
+      "metresPerRepeat": 2.0,
+      "maps": {
+        "color": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/terrazzo_tiles/terrazzo_tiles_diff_1k.jpg",
+          "md5": "12c27a579c2ed49de854b8a86e33647b",
+          "size": 1166107,
+          "output": "terrazzo_tiles_color.jpg",
+          "shippedBytes": 600658,
+          "shippedSha256": "1e9362baa450f989cc4b9cfcdca63b6ccc4de7977e59d2b0f4cd39534db3e818",
+          "processing": "scale=1024:1024"
+        },
+        "normal": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/terrazzo_tiles/terrazzo_tiles_nor_gl_1k.jpg",
+          "md5": "a5f6d05f27db4151227535bdbc82c048",
+          "size": 77954,
+          "output": "terrazzo_tiles_normal.png",
+          "shippedBytes": 188280,
+          "shippedSha256": "cc4c7f1fc43ad6d02021b2627a6a24cc58a677d243f3a467f54bd23f6af6e150",
+          "processing": "scale=1024:1024"
+        },
+        "roughness": {
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/terrazzo_tiles/terrazzo_tiles_rough_1k.jpg",
+          "md5": "e34bfd2f4fee1b2b9f310a71588aad17",
+          "size": 459022,
+          "output": "terrazzo_tiles_roughness.jpg",
+          "shippedBytes": 12534,
+          "shippedSha256": "7a508f3505382c1bf1f165689c29892a6a33c77fe2d605fb8eb96f0d888ff7b4",
+          "processing": "scale=1024:1024,lutrgb=r='max(val,150)':g='max(val,150)':b='max(val,150)'"
+        }
+      }
+    }
+  ]
+}

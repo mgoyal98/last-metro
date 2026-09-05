@@ -1,0 +1,43 @@
+{
+  "date": "2026-09-05",
+  "method": "faster-whisper 1.2.1, small.en, CPU int8; no expected script supplied to recognizer; local audio only",
+  "modelRevision": "d1d751a5f8271d482d14ca55d9e2deeebbae577f",
+  "clips": [
+    {
+      "file": "intro.wav",
+      "source": "public/audio/intro.wav",
+      "sha256": "95b904dc97efb2a1351f7e7e9377e1e7209b1464720aea612f870db22f9a7347",
+      "expected": "For your safety, please ignore any familiar voices.",
+      "transcribed": "For your safety, please ignore any familiar voices.",
+      "duration": 4.736,
+      "matchesWords": true
+    },
+    {
+      "file": "power.wav",
+      "source": "public/audio/power.wav",
+      "sha256": "df477b7b67aa5252e037f63953c9068b1789280c251f5c4d8f49227dcdd710fb",
+      "expected": "Service access restored. Please proceed to Control. Do not wait for anyone.",
+      "transcribed": "Service access restored. Please proceed to control. Do not wait for anyone.",
+      "duration": 7.176,
+      "matchesWords": true
+    },
+    {
+      "file": "false-pa.wav",
+      "source": "public/audio/false-pa.wav",
+      "sha256": "c570c89c414f47ba2e9a0e62c3e1b72027694f26b5287bd54ced00c3003338bd",
+      "expected": "The old route is cancelled. Service 99, Bay B, will take you Home. You can trust me.",
+      "transcribed": "The old route is cancelled, service 99 bay B will take you home. You can trust me.",
+      "duration": 8.056,
+      "matchesWords": true
+    },
+    {
+      "file": "dispatch.wav",
+      "source": "public/audio/dispatch.wav",
+      "sha256": "754fadf0e4817cc10d497bb7b58d762c583b7cfe2c89a44f88949a43f0fa1598",
+      "expected": "Boarding is enabled at Bays A and B. Verify the service against your records.",
+      "transcribed": "Boarding is enabled at Bays A and B. Verify the service against your records.",
+      "duration": 7.416,
+      "matchesWords": true
+    }
+  ]
+}

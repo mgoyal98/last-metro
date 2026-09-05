@@ -5,7 +5,6 @@ import {
   CylinderGeometry,
   DoubleSide,
   FogExp2,
-  Group,
   HemisphereLight,
   Mesh,
   MeshBasicMaterial,
@@ -23,6 +22,7 @@ import type { Enemy } from "../game/Enemy";
 import { signTexture, surface, scaleSurfaceUV } from "./materials";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { Shadow } from "./Shadow";
+import type { StationAssets } from "./assets";
 
 export type TargetId =
   | NoteId
@@ -58,6 +58,7 @@ export class Station {
   private displayState = "";
   private readonly shadow = new Shadow();
   private readonly staticBoxes: Mesh[] = [];
+  private readonly visualProxies: Mesh[] = [];
   private readonly accentLights: PointLight[] = [];
   private readonly token = new Mesh(
     new CylinderGeometry(0.065, 0.065, 0.018, 10),
@@ -69,8 +70,8 @@ export class Station {
   );
   private serviceLight: PointLight;
   private panelLight: Mesh;
-  private readonly tile = surface("#56625c", "wall");
-  private readonly floor = surface("#505956", "floor");
+  private readonly tile: MeshStandardMaterial;
+  private readonly floor: MeshStandardMaterial;
   private readonly metal = surface("#444d48", "metal");
   private readonly concrete = new MeshStandardMaterial({
     color: "#293633",
@@ -87,7 +88,12 @@ export class Station {
   });
   private readonly glow = new MeshBasicMaterial({ color: "#cae8d9" });
   private readonly red = new MeshBasicMaterial({ color: "#d87545" });
-  constructor(readonly physics: Physics) {
+  constructor(
+    readonly physics: Physics,
+    private readonly assets: StationAssets,
+  ) {
+    this.tile = assets.wall;
+    this.floor = assets.floor;
     this.scene.background = new Color("#111f20");
     this.scene.fog = new FogExp2("#111f20", 0.033);
     this.scene.add(
@@ -295,10 +301,22 @@ export class Station {
       3.5,
       0.65,
     );
-    this.box(14.7, 1.65, 2.4, 0.45, 1.9, 1.8, this.metal);
+    const cabinetBody = this.box(14.7, 1.65, 2.4, 0.45, 1.9, 1.8, this.metal);
+    this.visualProxies.push(cabinetBody);
+    const cabinetProp = assets.cabinet.clone(true);
+    cabinetProp.position.set(14.7, 0.7, 2.4);
+    cabinetProp.rotation.y = -Math.PI / 2;
+    this.scene.add(cabinetProp);
+    // This shuttered kiosk occupies clear floor beside the existing counter.
+    const kiosk = assets.kiosk.clone(true);
+    kiosk.position.set(12.55, 0, 6.35);
+    kiosk.rotation.y = Math.PI;
+    this.scene.add(kiosk);
+    this.visualProxies.push(this.box(12.55, 1, 6.35, 0.95, 2, 0.58, this.dark));
+    this.sign(["TICKETS / OFFLINE"], 12.55, 2.25, 6.05, 1.25, 0.25, Math.PI);
     const cabinet = this.sign(
       ["EMERGENCY POWER", "A  /  B     CIRCUIT ROUTING"],
-      14.46,
+      14.38,
       1.85,
       2.4,
       1.55,
@@ -307,7 +325,7 @@ export class Station {
     );
     this.target("cabinet", "Open circuit cabinet", cabinet, [12.6, 2.4]);
     this.panelLight = this.box(
-      14.43,
+      14.38,
       1.25,
       2.4,
       0.04,
@@ -548,12 +566,13 @@ export class Station {
       this.gate,
       this.controlGate,
       this.panelLight,
+      ...this.visualProxies,
       ...this.lamps,
       ...this.targets.map((target) => target.mesh),
     ]);
     const groups = new Map<Mesh["material"], Mesh[]>();
     for (const mesh of this.staticBoxes) {
-      if (movable.has(mesh)) continue;
+      if (movable.has(mesh) || !mesh.visible) continue;
       const meshes = groups.get(mesh.material) ?? [];
       meshes.push(mesh);
       groups.set(mesh.material, meshes);
@@ -573,6 +592,8 @@ export class Station {
       // interaction raycasts. It no longer incurs a rendering draw call.
       for (const mesh of meshes) this.scene.remove(mesh);
     }
+    // Keep frozen world matrices and visible=true for interaction occlusion.
+    this.scene.remove(...this.visualProxies);
   }
   setQuality(quality: "high" | "low"): void {
     for (const light of this.accentLights) light.visible = quality === "high";
@@ -719,19 +740,9 @@ export class Station {
     this.lamps.push(this.box(x, y, z, width, 0.045, 0.16, this.glow, false));
   }
   private bench(x: number, z: number, rotation: number): void {
-    const group = new Group();
-    const seat = new Mesh(new BoxGeometry(2.8, 0.1, 0.6), this.metal);
-    seat.position.y = 0.65;
-    const back = new Mesh(new BoxGeometry(2.8, 0.52, 0.07), this.metal);
-    back.position.set(0, 0.96, 0.27);
-    group.add(seat, back);
-    for (const lx of [-1, 1]) {
-      const leg = new Mesh(new BoxGeometry(0.09, 0.6, 0.45), this.dark);
-      leg.position.set(lx, 0.3, 0);
-      group.add(leg);
-    }
+    const group = this.assets.bench.clone(true);
     group.position.set(x, 0, z);
-    group.rotation.y = rotation;
+    group.rotation.y = rotation + Math.PI;
     this.scene.add(group);
     this.physics.box(x, 0.65, z, 0.65, 1.3, 2.8);
   }

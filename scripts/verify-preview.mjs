@@ -1,6 +1,7 @@
 // Run after npm run build with the built preview serving on port 4173.
 import { chromium, expect as baseExpect } from "@playwright/test";
 import { mkdirSync } from "node:fs";
+import { VOICES } from "../src/audio/voices.ts";
 const expect = baseExpect.configure({ timeout: 20000 });
 const browser = await chromium.launch({
   executablePath: process.env.CHROME_PATH,
@@ -30,12 +31,12 @@ await page.addInitScript(() => {
 });
 mkdirSync("test-results", { recursive: true });
 try {
-  await page.goto("http://127.0.0.1:4173/?test&v=0.4.0");
+  await page.goto("http://127.0.0.1:4173/?test&v=0.4.1");
   await expect(
     page.getByRole("button", { name: "ENTER THE STATION" }),
   ).toBeVisible();
   expect(await page.evaluate(() => "__LAST_METRO__" in window)).toBe(false);
-  await page.screenshot({ path: "test-results/phase4-title.png" });
+  await page.screenshot({ path: "test-results/phase4a-title.png" });
   await page.getByRole("button", { name: "ENTER THE STATION" }).click();
   await expect(page.locator("#subtitle")).toContainText("For your safety");
   await expect
@@ -69,6 +70,7 @@ try {
       const buffer = await ctx.decodeAudioData(await response.arrayBuffer());
       result[file] = {
         duration: buffer.duration,
+        channels: buffer.numberOfChannels,
         audible: buffer
           .getChannelData(0)
           .some((value) => Math.abs(value) > 0.01),
@@ -76,9 +78,12 @@ try {
     }
     return result;
   });
-  for (const clip of Object.values(clips)) {
+  for (const { file, seconds } of Object.values(VOICES)) {
+    const clip = clips[file];
     expect(clip.audible).toBe(true);
     expect(clip.duration).toBeGreaterThan(2);
+    expect(clip.duration).toBeLessThan(seconds);
+    expect(clip.channels).toBe(1);
   }
   // Install on the next load: pagehide intentionally persists the outgoing run.
   await page.addInitScript(() =>
@@ -117,7 +122,7 @@ try {
   await page.getByLabel("Departure step 1").selectOption("isolate");
   await page.getByLabel("Departure step 2").selectOption("signal");
   await page.getByLabel("Departure step 3").selectOption("release");
-  await page.screenshot({ path: "test-results/phase4-dispatch.png" });
+  await page.screenshot({ path: "test-results/phase4a-dispatch.png" });
   await page.getByRole("button", { name: "EXECUTE SEQUENCE" }).click();
   await expect(page.locator("#subtitle")).toContainText("Boarding is enabled");
   expect(

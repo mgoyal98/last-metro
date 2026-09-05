@@ -1,0 +1,156 @@
+{
+  "provider": "Google Gemini API",
+  "model": "gemini-2.5-flash-preview-tts",
+  "voice": "Charon",
+  "terms": "https://ai.google.dev/gemini-api/terms",
+  "ownership": "Original project scripts; Google stock synthetic voice, no actor cloning",
+  "format": "mono 22050 Hz signed 16-bit PCM WAV",
+  "finishing": "FFmpeg 8.1: highpass=f=180,lowpass=f=4200,aecho=0.8:0.7:85:0.08,loudnorm=I=-23:TP=-6:LRA=7",
+  "review": "Local unprompted speech recognition and signal/duration checks; subjective listening remains a human playtest gate",
+  "clips": [
+    {
+      "id": "intro",
+      "file": "intro.wav",
+      "transcript": "For your safety, please ignore any familiar voices.",
+      "duration": 4.735964,
+      "subtitleSeconds": 6,
+      "fitsSubtitle": true,
+      "requestSha256": "bc1597e333531624a4e3299775b1267722292e67033191f98cf2f4a352d6d5e7",
+      "request": {
+        "contents": [
+          {
+            "parts": [
+              {
+                "text": "Read only the transcript below, exactly as written. Use clear Indian English with natural pacing. Calm, measured and matter-of-fact, like a late-night station announcement. Use an original fictional voice, with no impersonation. Speak service 09 as zero nine and service 99 as ninety-nine. Do not add music, effects, introductions or the directions themselves.\n\nTranscript:\nFor your safety, please ignore any familiar voices."
+              }
+            ]
+          }
+        ],
+        "generationConfig": {
+          "responseModalities": ["AUDIO"],
+          "speechConfig": {
+            "voiceConfig": {
+              "prebuiltVoiceConfig": {
+                "voiceName": "Charon"
+              }
+            }
+          }
+        }
+      },
+      "generatedAt": "2026-09-05T18:45:33.156Z",
+      "output": "public/audio/intro.wav",
+      "sha256": "95b904dc97efb2a1351f7e7e9377e1e7209b1464720aea612f870db22f9a7347",
+      "bytes": 208934,
+      "samplePeakDbFS": -6.0,
+      "rmsDbFS": -22.53
+    },
+    {
+      "id": "power",
+      "file": "power.wav",
+      "transcript": "Service access restored. Please proceed to Control. Do not wait for anyone.",
+      "duration": 7.175964,
+      "subtitleSeconds": 8,
+      "fitsSubtitle": true,
+      "requestSha256": "a6027b603a555586deae106eeabda58d00b83d8f819aa796b81c220dc21f403f",
+      "request": {
+        "contents": [
+          {
+            "parts": [
+              {
+                "text": "Read only the transcript below, exactly as written. Use clear Indian English with natural pacing. Calm, measured and matter-of-fact, like a late-night station announcement. Use an original fictional voice, with no impersonation. Speak service 09 as zero nine and service 99 as ninety-nine. Do not add music, effects, introductions or the directions themselves.\n\nTranscript:\nService access restored. Please proceed to Control. Do not wait for anyone."
+              }
+            ]
+          }
+        ],
+        "generationConfig": {
+          "responseModalities": ["AUDIO"],
+          "speechConfig": {
+            "voiceConfig": {
+              "prebuiltVoiceConfig": {
+                "voiceName": "Charon"
+              }
+            }
+          }
+        }
+      },
+      "generatedAt": "2026-09-05T18:47:00.542Z",
+      "output": "public/audio/power.wav",
+      "sha256": "df477b7b67aa5252e037f63953c9068b1789280c251f5c4d8f49227dcdd710fb",
+      "bytes": 316538,
+      "samplePeakDbFS": -6.0,
+      "rmsDbFS": -23.49
+    },
+    {
+      "id": "falsePA",
+      "file": "false-pa.wav",
+      "transcript": "The old route is cancelled. Service 99, Bay B, will take you Home. You can trust me.",
+      "duration": 8.055964,
+      "subtitleSeconds": 10,
+      "fitsSubtitle": true,
+      "requestSha256": "cbde466ca412ff1be79781bc5975e3b08fbdff2d8cdf348b4469b31de7b29c92",
+      "request": {
+        "contents": [
+          {
+            "parts": [
+              {
+                "text": "Read aloud in clear Indian English. Quietly reassuring, with an unsettling familiarity. Enunciate \"route\" clearly. Pause around the platform designation \"Bay B\", pronouncing Bay and the letter B as two distinct words. Speak only the following transcript, without background sound.\n\nTranscript:\nThe old route is cancelled. Service 99, Bay B, will take you Home. You can trust me."
+              }
+            ]
+          }
+        ],
+        "generationConfig": {
+          "responseModalities": ["AUDIO"],
+          "speechConfig": {
+            "voiceConfig": {
+              "prebuiltVoiceConfig": {
+                "voiceName": "Charon"
+              }
+            }
+          }
+        }
+      },
+      "generatedAt": "2026-09-05T19:05:44.541Z",
+      "output": "public/audio/false-pa.wav",
+      "sha256": "c570c89c414f47ba2e9a0e62c3e1b72027694f26b5287bd54ced00c3003338bd",
+      "bytes": 355346,
+      "samplePeakDbFS": -7.02,
+      "rmsDbFS": -23.36
+    },
+    {
+      "id": "dispatch",
+      "file": "dispatch.wav",
+      "transcript": "Boarding is enabled at Bays A and B. Verify the service against your records.",
+      "duration": 7.415964,
+      "subtitleSeconds": 9,
+      "fitsSubtitle": true,
+      "requestSha256": "be5a6962a3f0ad82c0c4583b52f27570f003fb331ce3df87a57ca76a864114ef",
+      "request": {
+        "contents": [
+          {
+            "parts": [
+              {
+                "text": "Read aloud in clear Indian English. Calm, measured and matter-of-fact, like a late-night station announcement. Speak only the following transcript, without background sound.\n\nTranscript:\nBoarding is enabled at Bays A and B. Verify the service against your records."
+              }
+            ]
+          }
+        ],
+        "generationConfig": {
+          "responseModalities": ["AUDIO"],
+          "speechConfig": {
+            "voiceConfig": {
+              "prebuiltVoiceConfig": {
+                "voiceName": "Charon"
+              }
+            }
+          }
+        }
+      },
+      "generatedAt": "2026-09-05T18:51:18.940Z",
+      "output": "public/audio/dispatch.wav",
+      "sha256": "754fadf0e4817cc10d497bb7b58d762c583b7cfe2c89a44f88949a43f0fa1598",
+      "bytes": 327122,
+      "samplePeakDbFS": -5.98,
+      "rmsDbFS": -23.04
+    }
+  ]
+}

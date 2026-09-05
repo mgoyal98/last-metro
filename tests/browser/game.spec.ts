@@ -361,6 +361,10 @@ test("session checkpoints work when browser storage is blocked", async ({
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "LOAD CHECKPOINT" }).click();
   expect((await snapshot(page)).progress.fuses).toEqual(["amber"]);
+  // The PA trigger uses active simulation time, which can lag under software WebGL.
+  await expect
+    .poll(async () => (await snapshot(page)).elapsed, { timeout: 20000 })
+    .toBeGreaterThan(2);
   await expect(page.locator("#subtitle")).toContainText("For your safety");
   await expect(page.locator("#subtitle")).toHaveClass("visible");
   const announcement = await page.locator("#subtitle").textContent();
@@ -841,4 +845,52 @@ test("a failed game download exposes a reload action that recovers the station",
   await expect(
     page.getByRole("button", { name: "ENTER THE STATION" }),
   ).toBeVisible({ timeout: 20000 });
+});
+
+test("a failed prop download can recover and packaged materials finish before play", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  let fail = true;
+  const loaded = new Set<string>();
+  page.on("response", (response) => {
+    const path = new URL(response.url()).pathname;
+    if (response.ok() && /^\/(models|textures)\//.test(path)) loaded.add(path);
+  });
+  await page.route("**/models/electrical-cabinet.glb", async (route) => {
+    if (fail) {
+      fail = false;
+      await route.abort();
+    } else await route.continue();
+  });
+  await page.goto("/?test");
+  await expect(
+    page.getByRole("heading", { name: "The station lost its signal." }),
+  ).toBeVisible();
+  loaded.clear();
+  await page.getByRole("button", { name: "RELOAD STATION" }).click();
+  await expect(
+    page.getByRole("button", { name: "ENTER THE STATION" }),
+  ).toBeVisible({ timeout: 20000 });
+  expect(
+    [...loaded].filter((path) => path.startsWith("/models/")),
+  ).toHaveLength(3);
+  expect(
+    [...loaded].filter((path) => path.startsWith("/textures/")),
+  ).toHaveLength(6);
+  await page.getByRole("button", { name: "ENTER THE STATION" }).click();
+  await expect
+    .poll(async () => (await snapshot(page)).elapsed, { timeout: 20000 })
+    .toBeGreaterThan(1);
+  await page.evaluate(() =>
+    (window as any).__LAST_METRO__.place(12.55, 4.3, Math.PI),
+  );
+  await holdForSimulation(page, "KeyW", 1.2);
+  const kioskStop = (await snapshot(page)).position.z;
+  expect(kioskStop).toBeGreaterThan(5.5);
+  expect(kioskStop).toBeLessThan(5.9);
+  await target(page, "cabinet");
+  await expect(
+    page.getByRole("heading", { name: "Emergency power" }),
+  ).toBeVisible();
 });
