@@ -527,3 +527,37 @@ select {
     padding: 14px 0;
   }
 }
+
+.threat-meter {
+  position: absolute;
+  top: 190px;
+  left: 42px;
+  display: grid;
+  gap: 9px;
+  padding: 12px 16px;
+  border-left: 2px solid #87a899;
+  background: #12201ed9;
+  color: #cad6ca;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.threat-meter small {
+  color: #b7a97b;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+.threat-meter.danger {
+  color: #ffc49c;
+  border-color: #d98b61;
+  background: #381e18e8;
+}
+.captured-panel {
+  border-top: 2px solid #c57f58;
+}
+@media (max-height: 700px) {
+  .threat-meter {
+    top: 158px;
+    left: 24px;
+    padding: 9px 12px;
+  }
+}

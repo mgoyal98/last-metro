@@ -19,6 +19,7 @@ import type RAPIER from "@dimforge/rapier3d-compat";
 import type { Physics } from "../game/physics";
 import type { Progress } from "../game/state";
 import type { NoteId } from "../game/puzzles";
+import type { Enemy } from "../game/Enemy";
 import { signTexture, surface } from "./materials";
 
 export type TargetId =
@@ -29,7 +30,11 @@ export type TargetId =
   | "access"
   | "dispatch"
   | "train"
-  | "falseTrain";
+  | "falseTrain"
+  | "hidePlatform"
+  | "hideHall"
+  | "hideControl"
+  | "machine";
 export interface Target {
   id: TargetId;
   label: string;
@@ -50,6 +55,14 @@ export class Station {
   private readonly displays = new Map<string, Mesh>();
   private displayState = "";
   private shadow = new Group();
+  private readonly token = new Mesh(
+    new CylinderGeometry(0.065, 0.065, 0.018, 10),
+    new MeshStandardMaterial({
+      color: "#d8ba75",
+      metalness: 0.7,
+      roughness: 0.3,
+    }),
+  );
   private serviceLight: PointLight;
   private panelLight: Mesh;
   private readonly tile = surface("#56625c", "wall");
@@ -489,16 +502,110 @@ export class Station {
       Math.PI / 2,
     );
     this.target("archive", "Replay the dispatch archive", archive, [9, -21.8]);
-    // Non-pursuing silhouette, shown once the power is restored.
+    this.cover("hidePlatform", 3.55, -15, "PLATFORM SHELTER");
+    this.cover("hideHall", 10.7, 4.5, "STAFF SHELTER");
+    this.cover("hideControl", 15.5, -21, "RECORDS SHELTER");
+    this.box(13.55, 0.75, -8.5, 0.7, 1.5, 0.9, this.metal);
+    const machine = this.sign(
+      ["VENT PURGE", "E / 8 SECOND CYCLE"],
+      13.18,
+      1.35,
+      -8.5,
+      0.8,
+      0.4,
+      -Math.PI / 2,
+    );
+    this.target(
+      "machine",
+      "Run ventilation purge · draws attention",
+      machine,
+      [12, -8.5],
+    );
+    // A separate poster changes on the return journey; required clues stay intact.
+    this.displays.set(
+      "poster",
+      this.sign(
+        ["YOU ARE EXPECTED", "THANK YOU FOR WAITING"],
+        7.5,
+        1.8,
+        6.58,
+        2.5,
+        1.1,
+        Math.PI,
+      ),
+    );
+    this.token.visible = false;
+    this.scene.add(this.token);
+    // Human-scale silhouette; the game brain supplies position and visibility.
     const shadowMat = new MeshBasicMaterial({ color: "#050c0c" });
     const torso = new Mesh(new CylinderGeometry(0.22, 0.3, 1.2, 8), shadowMat);
     torso.position.y = 1.0;
     const head = new Mesh(new CylinderGeometry(0.15, 0.13, 0.33, 8), shadowMat);
     head.position.y = 1.76;
     this.shadow.add(torso, head);
+    for (const x of [-0.13, 0.13]) {
+      const leg = new Mesh(
+        new CylinderGeometry(0.085, 0.07, 0.65, 6),
+        shadowMat,
+      );
+      leg.position.set(x, 0.34, 0);
+      this.shadow.add(leg);
+    }
+    for (const x of [-0.32, 0.32]) {
+      const arm = new Mesh(
+        new CylinderGeometry(0.065, 0.075, 0.85, 6),
+        shadowMat,
+      );
+      arm.position.set(x, 0.98, 0);
+      this.shadow.add(arm);
+    }
     this.shadow.position.set(1.7, 0, -17.5);
     this.shadow.visible = false;
     this.scene.add(this.shadow);
+  }
+  private cover(id: TargetId, x: number, z: number, label: string): void {
+    this.box(x - 0.9, 1.05, z, 0.15, 2.1, 2, this.metal);
+    this.box(x + 0.9, 1.05, z, 0.15, 2.1, 2, this.metal);
+    this.box(x, 1.05, z - 1, 1.8, 2.1, 0.15, this.metal);
+    this.sign(
+      [label, "BREAK SIGHT / STEP INSIDE"],
+      x,
+      2.3,
+      z + 1.02,
+      1.75,
+      0.4,
+    );
+    const marker = this.sign(
+      ["SHELTER", "E / HIDE"],
+      x,
+      1.15,
+      z - 0.91,
+      1.1,
+      0.5,
+    );
+    this.target(id, "Hide in shelter · break sight first", marker, [x, z]);
+  }
+  animateThreat(enemy: Enemy, time: number): void {
+    this.shadow.visible = enemy.state !== "Dormant";
+    this.shadow.position.set(
+      enemy.position.x,
+      Math.sin(time * 5) * 0.013,
+      enemy.position.z,
+    );
+    this.shadow.rotation.y = enemy.yaw;
+  }
+  showToken(x: number, y: number, z: number, visible: boolean): void {
+    this.token.visible = visible;
+    this.token.position.set(x, y, z);
+    this.token.rotation.z += 0.15;
+  }
+  changePoster(changed: boolean): void {
+    this.updateDisplay(
+      "poster",
+      changed
+        ? ["YOU WERE EXPECTED", "WHY DID YOU COME BACK?"]
+        : ["YOU ARE EXPECTED", "THANK YOU FOR WAITING"],
+    );
   }
   private box(
     x: number,
@@ -660,7 +767,6 @@ export class Station {
     }
     this.serviceLight.intensity = state.powered ? 17 : 0.5;
     this.panelLight.material = state.powered ? this.glow : this.red;
-    this.shadow.visible = state.powered && !state.dispatched;
   }
   private updateDisplay(id: string, lines: string[]): void {
     const mesh = this.displays.get(id)!;

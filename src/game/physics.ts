@@ -1,6 +1,9 @@
 import RAPIER from "@dimforge/rapier3d-compat";
+import type { SolidBox } from "./navigation";
 
 export class Physics {
+  readonly boxes = new Map<number, SolidBox>();
+  revision = 0;
   readonly world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   private readonly body: RAPIER.RigidBody;
   private readonly collider: RAPIER.Collider;
@@ -29,11 +32,16 @@ export class Physics {
     h: number,
     d: number,
   ): RAPIER.Collider {
-    return this.world.createCollider(
+    const collider = this.world.createCollider(
       RAPIER.ColliderDesc.cuboid(w / 2, h / 2, d / 2).setTranslation(x, y, z),
     );
+    this.boxes.set(collider.handle, { x, y, z, w, h, d });
+    this.revision++;
+    return collider;
   }
   remove(collider: RAPIER.Collider): void {
+    this.boxes.delete(collider.handle);
+    this.revision++;
     this.world.removeCollider(collider, true);
   }
   move(x: number, z: number, dt: number): void {

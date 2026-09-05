@@ -2,6 +2,8 @@ export interface Settings {
   sensitivity: number;
   brightness: number;
   volume: number;
+  effectsVolume: number;
+  voiceVolume: number;
   reducedMotion: boolean;
   reducedFlicker: boolean;
   captions: boolean;
@@ -11,6 +13,8 @@ export const defaults: Settings = {
   sensitivity: 1,
   brightness: 1,
   volume: 0.45,
+  effectsVolume: 0.8,
+  voiceVolume: 1,
   reducedMotion: true,
   reducedFlicker: true,
   captions: true,
@@ -22,13 +26,18 @@ export function readSettings(): Settings {
       localStorage.getItem("last-metro.settings.v1") ?? "{}",
     ) as Record<string, unknown>;
     const s = { ...defaults };
-    for (const key of ["sensitivity", "brightness", "volume"] as const) {
+    for (const key of [
+      "sensitivity",
+      "brightness",
+      "volume",
+      "effectsVolume",
+      "voiceVolume",
+    ] as const) {
       const value = parsed[key];
+      const volume =
+        key === "volume" || key === "effectsVolume" || key === "voiceVolume";
       if (typeof value === "number" && Number.isFinite(value))
-        s[key] = Math.min(
-          key === "volume" ? 1 : 1.8,
-          Math.max(key === "volume" ? 0 : 0.4, value),
-        );
+        s[key] = Math.min(volume ? 1 : 1.8, Math.max(volume ? 0 : 0.4, value));
     }
     for (const key of ["reducedMotion", "reducedFlicker", "captions"] as const)
       if (typeof parsed[key] === "boolean") s[key] = parsed[key];

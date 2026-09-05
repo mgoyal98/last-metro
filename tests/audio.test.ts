@@ -10,6 +10,7 @@ it("restores the master gain when resuming after a note or pause", async () => {
     currentTime = 0;
     destination = {};
     resume = vi.fn(async () => {});
+    suspend = vi.fn(async () => {});
     createGain() {
       const node = {
         gain: {

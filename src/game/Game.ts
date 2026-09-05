@@ -26,6 +26,10 @@ import {
 } from "./state";
 import { isNoteId } from "./puzzles";
 import type { Action, Progress } from "./state";
+import { Enemy } from "./Enemy";
+import { distance, Navigation } from "./navigation";
+import type { Point } from "./navigation";
+import { VOICES } from "../audio/voices";
 
 export class Game {
   private readonly renderer: WebGLRenderer;
@@ -39,6 +43,21 @@ export class Game {
   private readonly ui: UI;
   private readonly station: Station;
   private readonly player: Player;
+  private readonly enemy: Enemy;
+  private hidden = false;
+  private hideLight = true;
+  private tokens = 3;
+  private flight: { start: Point; end: Point; age: number } | null = null;
+  private noiseClock = 0;
+  private enemyStep = 0;
+  private machineUntil = 0;
+  private machineReady = 0;
+  private machinePulse = 0;
+  private posterChanged = false;
+  private lastMoved = 0;
+  private echoPlayed = false;
+  private lastScare = 0;
+  private lightEvent = false;
   private readonly flashlight = new SpotLight(
     "#e6e7c9",
     28,
@@ -81,6 +100,7 @@ export class Game {
     this.renderer.toneMapping = ACESFilmicToneMapping;
     this.station = station;
     this.player = new Player(this.camera, station.physics);
+    this.enemy = new Enemy(new Navigation(station.physics));
     this.ui = new UI(document.getElementById("app")!);
     station.scene.add(this.camera);
     this.flashlight.position.set(0.15, -0.1, 0);
@@ -121,6 +141,7 @@ export class Game {
     );
     this.renderer.toneMappingExposure = this.settings.brightness * 1.15;
     this.audio.setVolume(this.settings.volume);
+    this.audio.setMix(this.settings.effectsVolume, this.settings.voiceVolume);
     if (!this.settings.captions) this.ui.caption("");
   }
   private resize(): void {
@@ -172,6 +193,7 @@ export class Game {
         else if (
           this.ui.screen !== "title" &&
           this.ui.screen !== "ending" &&
+          this.ui.screen !== "captured" &&
           this.ui.screen !== "expired"
         )
           this.resume();
@@ -184,11 +206,13 @@ export class Game {
       if (event.repeat) return;
       if (event.code === "Tab") this.show("inventory");
       if (event.code === "KeyE") this.interact();
-      if (event.code === "KeyF") {
+      if (event.code === "KeyQ") this.throwToken();
+      if (event.code === "KeyF" && !this.hidden) {
         this.player.flashlight = !this.player.flashlight;
         this.audio.cue("collect");
       }
-      if (event.code === "KeyC") this.player.crouched = !this.player.crouched;
+      if (event.code === "KeyC" && !this.hidden)
+        this.player.crouched = !this.player.crouched;
     });
     document.addEventListener("keyup", (event) =>
       this.player.keys.delete(event.code),
@@ -253,11 +277,7 @@ export class Game {
             ? "Control unlocked. Checkpoint saved. The live PA transcript is in your journal."
             : "Control unlocked. Session checkpoint only. The PA transcript is in your journal.",
         );
-        if (!wasUnlocked)
-          this.say(
-            "LIVE PA: “The old route is cancelled. Service 99, Bay B, will take you Home. You can trust me.”",
-            12,
-          );
+        if (!wasUnlocked) this.voice("falsePA");
         break;
       }
       case "dispatch": {
@@ -273,10 +293,7 @@ export class Game {
         this.resume();
         this.audio.cue("power");
         this.caption("[ The PA cuts out. Two boarding relays engage. ]");
-        this.say(
-          "DEPARTURE TERMINAL: Boarding is enabled at Bays A and B. Verify the service against your records.",
-          9,
-        );
+        this.voice("dispatch");
         break;
       }
       case "settings":
@@ -311,9 +328,10 @@ export class Game {
         this.resume();
         this.audio.cue("power");
         this.caption("[ Machinery starts in the service corridor ]");
-        this.say(
-          "PA SYSTEM: “Service access restored. Please proceed to Control. Do not wait for anyone.”",
-          9,
+        this.enemy.activate();
+        this.voice("power");
+        this.ui.toast(
+          "Something heard the power. Break sight, then E inside a shelter. Q throws a token; sprinting is loud.",
         );
         break;
       }
@@ -327,6 +345,25 @@ export class Game {
         : state;
     this.station.apply(this.state);
     this.player.reset(...checkpointSpawn(this.state));
+    this.enemy.reset(this.state.powered);
+    this.hidden = false;
+    this.player.flashlight = true;
+    this.tokens = 3;
+    this.flight = null;
+    this.noiseClock = 0;
+    this.enemyStep = 0;
+    this.machineUntil = 0;
+    this.machineReady = 0;
+    this.machinePulse = 0;
+    this.posterChanged = false;
+    this.lastMoved = 0;
+    this.echoPlayed = false;
+    this.lastScare = 0;
+    this.lightEvent = false;
+    this.station.changePoster(false);
+    this.station.showToken(0, 0, 0, false);
+    this.station.animateThreat(this.enemy, 0);
+    this.audio.stopVoice();
     this.elapsed = 0;
     this.subtitleRemaining = 0;
     this.captionRemaining = 0;
@@ -338,7 +375,9 @@ export class Game {
     this.resume();
     this.ui.toast(
       this.persistentStorage
-        ? "WASD to move · Mouse to look · E to inspect · Tab for journal"
+        ? this.state.powered
+          ? "Checkpoint safe for 12 seconds. Break sight before hiding. Q throws a token · 3 per attempt."
+          : "WASD to move · Mouse to look · E to inspect · Tab for journal"
         : "Browser storage unavailable. Checkpoints last for this session only.",
     );
     this.caption("[ Fluorescent hum. A train idles in the dark. ]");
@@ -404,9 +443,55 @@ export class Game {
     this.nextHint = this.elapsed + 75;
   }
   private interact(): void {
+    if (this.hidden) {
+      this.hidden = false;
+      this.enemy.leaveHide();
+      this.player.crouched = false;
+      this.player.flashlight = this.hideLight;
+      this.ui.toast("Left shelter. Move quietly.");
+      return;
+    }
     const target = this.findTarget();
     if (!target) return;
-    if (target.id === "amber" || target.id === "blue") {
+    if (target.id.startsWith("hide")) {
+      if (
+        distance(this.camera.position, {
+          x: target.approach[0],
+          z: target.approach[1],
+        }) > 0.9
+      ) {
+        this.ui.toast("Step all the way inside the marked shelter to hide.");
+        return;
+      }
+      this.enemy.enterHide(this.observer());
+      this.hidden = true;
+      this.hideLight = this.player.flashlight;
+      this.player.flashlight = false;
+      this.player.crouched = true;
+      this.player.keys.clear();
+      this.ui.toast(
+        this.enemy.compromised
+          ? "It saw you enter. This shelter is exposed — E to leave, sprint and break sight."
+          : "Concealed. Time continues. E to leave shelter.",
+      );
+    } else if (target.id === "machine") {
+      if (!this.state.powered) {
+        this.ui.toast("The purge needs emergency power.");
+        return;
+      }
+      if (this.elapsed < this.machineReady) {
+        this.ui.toast(
+          `Purge cooling down · ${Math.ceil(this.machineReady - this.elapsed)} seconds.`,
+        );
+        return;
+      }
+      this.machineUntil = this.elapsed + 8;
+      this.machineReady = this.elapsed + 24;
+      this.machinePulse = 0;
+      this.caption(
+        "[ Ventilation purge starts near the service entrance. It draws attention. ]",
+      );
+    } else if (target.id === "amber" || target.id === "blue") {
       this.commit({ type: "collect", fuse: target.id });
       this.audio.cue("collect");
       this.ui.toast(
@@ -463,6 +548,199 @@ export class Game {
     this.ui.announce(text);
     this.subtitleRemaining = duration;
   }
+  private voice(id: keyof typeof VOICES): void {
+    const clip = VOICES[id];
+    this.say(`${clip.speaker}: “${clip.text}”`, clip.seconds + 1);
+    this.audio.voice(id);
+  }
+  private observer() {
+    return {
+      x: this.camera.position.x,
+      z: this.camera.position.z,
+      crouched: this.player.crouched,
+      hidden: this.hidden,
+    };
+  }
+  private throwToken(): void {
+    if (this.hidden || this.flight) return;
+    if (this.tokens <= 0) {
+      this.ui.toast(
+        "No tokens left. The ventilation purge can still distract it.",
+      );
+      return;
+    }
+    const start = { x: this.camera.position.x, z: this.camera.position.z };
+    this.camera.getWorldDirection(this.view);
+    const horizontal = Math.hypot(this.view.x, this.view.z);
+    if (horizontal < 0.1) return;
+    let end = { ...start };
+    for (let d = 0.2; d <= 8; d += 0.2) {
+      const next = {
+        x: start.x + (this.view.x / horizontal) * d,
+        z: start.z + (this.view.z / horizontal) * d,
+      };
+      if (
+        !this.enemy.navigation.walkable(next, 0.34) ||
+        !this.enemy.navigation.sight(start, next, 0.7, 0.7)
+      )
+        break;
+      end = next;
+    }
+    if (distance(start, end) < 0.5) {
+      this.ui.toast("Aim toward open floor to throw a token.");
+      return;
+    }
+    this.tokens--;
+    this.flight = { start, end, age: 0 };
+  }
+  private updateThreat(dt: number, moving: boolean): void {
+    const previous = { ...this.enemy.position },
+      oldState = this.enemy.state;
+    this.enemy.update(dt, this.observer());
+    this.audio.listen(this.camera.position, this.player.yaw);
+    this.noiseClock -= dt;
+    if (moving) {
+      this.lastMoved = this.elapsed;
+      if (this.noiseClock <= 0) {
+        this.noiseClock = 0.45;
+        const running =
+          this.player.keys.has("ShiftLeft") ||
+          this.player.keys.has("ShiftRight");
+        this.enemy.hear({
+          ...this.observer(),
+          radius: this.player.crouched ? 1.5 : running ? 17 : 4,
+        });
+      }
+    }
+    if (this.flight) {
+      this.flight.age += dt;
+      const t = Math.min(1, this.flight.age / 0.65),
+        { start, end } = this.flight;
+      this.station.showToken(
+        start.x + (end.x - start.x) * t,
+        0.1 + Math.sin(t * Math.PI) * 0.4,
+        start.z + (end.z - start.z) * t,
+        true,
+      );
+      if (t === 1) {
+        this.enemy.hear({ ...end, radius: 27 });
+        this.spatial("token", end);
+        this.caption("[ Metal token rings across the floor. ]");
+        this.flight = null;
+        this.station.showToken(0, 0, 0, false);
+      }
+    }
+    if (this.elapsed < this.machineUntil && this.elapsed >= this.machinePulse) {
+      this.machinePulse = this.elapsed + 1;
+      const source = { x: 12.5, z: -8.5 };
+      this.enemy.hear({ ...source, radius: 38 });
+      this.spatial("machine", source);
+    }
+    this.enemyStep += distance(previous, this.enemy.position);
+    if (this.enemyStep > 1.3) {
+      this.enemyStep = 0;
+      this.spatial("enemy", this.enemy.position);
+      if (distance(this.enemy.position, this.camera.position) < 10) {
+        const angle =
+          Math.atan2(
+            this.enemy.position.x - this.camera.position.x,
+            -(this.enemy.position.z - this.camera.position.z),
+          ) + this.player.yaw;
+        const side =
+          Math.sin(angle) > 0.35
+            ? "right"
+            : Math.sin(angle) < -0.35
+              ? "left"
+              : Math.cos(angle) < 0
+                ? "behind"
+                : "ahead";
+        this.caption(
+          `[ Heavy footsteps ${side}${this.enemy.navigation.sight(this.enemy.position, this.camera.position) ? "" : ", beyond the wall"}. ]`,
+        );
+      }
+    }
+    if (oldState !== "Chase" && this.enemy.state === "Chase") {
+      this.caption("[ A sharp breath. Fast footsteps — you have been seen. ]");
+      this.ui.toast(
+        "SEEN · Sprint to break sight, then hide. A token will not distract it while it can see you.",
+      );
+      this.spatial("warning", this.enemy.position);
+    }
+    this.station.animateThreat(this.enemy, this.elapsed);
+    if (this.enemy.captured) {
+      this.show("captured");
+      return;
+    }
+    // Sparse one-shot events; only active simulation advances their spacing.
+    if (
+      !this.echoPlayed &&
+      this.elapsed > 15 &&
+      this.elapsed - this.lastMoved > 0.8 &&
+      this.elapsed - this.lastMoved < 1.2 &&
+      this.elapsed - this.lastScare > 12
+    ) {
+      this.echoPlayed = true;
+      this.lastScare = this.elapsed;
+      this.spatial("enemy", {
+        x: this.camera.position.x + Math.sin(this.player.yaw) * 3,
+        z: this.camera.position.z + Math.cos(this.player.yaw) * 3,
+      });
+      this.caption(
+        "[ Your footsteps stop. One more step answers behind you. ]",
+      );
+    }
+    if (
+      !this.posterChanged &&
+      this.state.dispatched &&
+      this.station.location(this.camera.position) === "TICKET HALL" &&
+      this.elapsed - this.lastScare > 12
+    ) {
+      this.posterChanged = true;
+      this.lastScare = this.elapsed;
+      this.station.changePoster(true);
+      this.caption("[ The poster has changed. YOU WERE EXPECTED. ]");
+    }
+    if (
+      !this.lightEvent &&
+      this.state.controlUnlocked &&
+      this.elapsed - this.lastScare > 16
+    ) {
+      this.lightEvent = true;
+      this.lastScare = this.elapsed;
+      this.spatial("warning", { x: 12, z: -18 });
+      this.caption("[ A fluorescent ballast fails near Control. ]");
+    }
+    this.ui.threat(
+      this.hidden
+        ? this.enemy.compromised
+          ? "SHELTER EXPOSED · E TO LEAVE"
+          : "CONCEALED · E TO LEAVE"
+        : this.enemy.grace > 0
+          ? `SAFE WINDOW · ${Math.ceil(this.enemy.grace)}s`
+          : this.enemy.state === "Chase"
+            ? "SEEN · BREAK SIGHT"
+            : this.enemy.awareness > 0.15
+              ? "SOMETHING IS WATCHING"
+              : "MOVE QUIETLY",
+      this.tokens,
+      this.enemy.state === "Chase" || this.enemy.compromised,
+    );
+  }
+  private spatial(
+    kind: "enemy" | "token" | "machine" | "warning",
+    source: Point,
+  ): void {
+    this.audio.spatial(
+      kind,
+      source,
+      !this.enemy.navigation.sight(
+        source,
+        this.camera.position,
+        1.2,
+        this.camera.position.y,
+      ),
+    );
+  }
   private caption(text: string): void {
     if (!this.settings.captions) return;
     this.ui.caption(text);
@@ -476,10 +754,13 @@ export class Game {
     if (this.active) {
       this.accumulator += dt;
       while (this.accumulator >= 1 / 60) {
-        this.player.update(1 / 60, this.settings);
+        if (this.hidden) this.player.keys.clear();
+        const moving = this.player.update(1 / 60, this.settings);
         this.accumulator -= 1 / 60;
         this.elapsed += 1 / 60;
         this.state = advanceTime(this.state, 1 / 60);
+        this.updateThreat(1 / 60, moving);
+        if (!this.active) break;
         if (this.subtitleRemaining > 0) {
           this.subtitleRemaining -= 1 / 60;
           if (this.subtitleRemaining <= 0) this.ui.clearAnnouncement();
@@ -490,6 +771,10 @@ export class Game {
         }
         if (this.state.remainingSeconds <= 0) break;
       }
+      if (!this.active) {
+        this.renderer.render(this.station.scene, this.camera);
+        return;
+      }
       if (this.state.remainingSeconds <= 0) {
         this.show("expired");
         this.renderer.render(this.station.scene, this.camera);
@@ -498,9 +783,9 @@ export class Game {
       this.flashlight.visible = this.player.flashlight;
       this.flashlight.intensity =
         !this.settings.reducedFlicker &&
-        this.state.powered &&
-        Math.sin(this.elapsed * 17) > 0.99
-          ? 21
+        this.lightEvent &&
+        this.elapsed - this.lastScare < 0.6
+          ? 8
           : 28;
       if (this.player.steps > this.nextStep + 1.6) {
         this.audio.cue("step");
@@ -508,17 +793,16 @@ export class Game {
       }
       if (!this.introPlayed && this.elapsed > 2) {
         this.introPlayed = true;
-        this.say(
-          "PA SYSTEM: “For your safety, please ignore any familiar voices.”",
-          8,
-        );
+        this.voice("intro");
       }
       if (this.elapsed > this.nextHint) {
         this.nextHint = this.elapsed + 90;
         this.ui.toast(hint(this.state));
       }
       this.currentTarget = this.findTarget();
-      this.ui.interaction(this.currentTarget?.label ?? null);
+      this.ui.interaction(
+        this.hidden ? "Leave shelter" : (this.currentTarget?.label ?? null),
+      );
       this.ui.update(
         this.state,
         this.station.location(this.camera.position),
@@ -549,6 +833,18 @@ export class Game {
         frameMs: this.averageFrame,
         drawCalls: this.renderer.info.render.calls,
         triangles: this.renderer.info.render.triangles,
+        enemy: {
+          state: this.enemy.state,
+          position: { ...this.enemy.position },
+          awareness: this.enemy.awareness,
+          grace: this.enemy.grace,
+          compromised: this.enemy.compromised,
+          seesPlayer: this.enemy.seesPlayer,
+        },
+        hidden: this.hidden,
+        tokens: this.tokens,
+        machineUntil: this.machineUntil,
+        posterChanged: this.posterChanged,
       }),
       goTo: (id: TargetId) => {
         const target = this.station.targets.find((item) => item.id === id)!;
@@ -588,6 +884,14 @@ export class Game {
           remainingSeconds: seconds,
         };
       },
+      setEnemy: (x: number, z: number, yaw = 0) => {
+        this.enemy.reset(true);
+        this.enemy.position = { x, z };
+        this.enemy.yaw = yaw;
+        this.enemy.grace = 0;
+      },
+      noise: (x: number, z: number, radius = 30) =>
+        this.enemy.hear({ x, z, radius }),
       dispose: () => {
         this.destroyed = true;
         this.renderer.setAnimationLoop(null);

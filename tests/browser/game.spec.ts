@@ -195,10 +195,12 @@ async function executeSequence(page: Page) {
   await page.getByRole("button", { name: "EXECUTE SEQUENCE" }).click();
 }
 async function expectFrozen(page: Page) {
-  const before = (await snapshot(page)).progress.remainingSeconds;
+  const frozen = await snapshot(page);
+  const before = frozen.progress.remainingSeconds;
   await page.waitForTimeout(200);
   expect((await snapshot(page)).progress.remainingSeconds).toBe(before);
   expect((await snapshot(page)).active).toBe(false);
+  expect((await snapshot(page)).enemy).toEqual(frozen.enemy);
 }
 
 for (const service of ["09", "99"])
@@ -466,4 +468,217 @@ test("the entire authored route is traversable without teleporting", async ({
   await expect(
     page.getByRole("heading", { name: "You made the last metro." }),
   ).toBeVisible();
+});
+
+async function poweredCheckpoint(page: Page) {
+  let state = transition(freshProgress(), { type: "collect", fuse: "amber" });
+  state = transition(state, { type: "collect", fuse: "blue" });
+  state = transition(state, { type: "power", a: "service", b: "departure" });
+  state = transition(state, { type: "access", code: ACCESS_CODE });
+  state = transition(state, { type: "note", id: "archive" });
+  await page.addInitScript(
+    ({ key, state }) => localStorage.setItem(key, JSON.stringify(state)),
+    { key: SAVE_KEY, state },
+  );
+  await page.goto("/?test");
+  await page.getByRole("button", { name: "CONTINUE JOURNEY" }).click();
+}
+
+test("pursuit pauses and capture recovers puzzle progress with fresh safety and tokens", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  await poweredCheckpoint(page);
+  await page.evaluate(() => {
+    const b = (window as any).__LAST_METRO__;
+    b.place(1.5, -15);
+    b.setEnemy(1.5, -12, 0);
+  });
+  await expect
+    .poll(async () => (await snapshot(page)).enemy.state)
+    .toBe("Chase");
+  await page.keyboard.press("Tab");
+  await expectFrozen(page);
+  await page.keyboard.press("Escape");
+  await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+  await expectFrozen(page);
+  await page.getByRole("button", { name: "RESUME JOURNEY" }).click();
+  await expect(
+    page.getByRole("heading", { name: "One breath too late." }),
+  ).toBeVisible();
+  await expectFrozen(page);
+  await page.screenshot({ path: "test-results/phase3-capture.png" });
+  await page.keyboard.press("Escape");
+  expect((await snapshot(page)).screen).toBe("captured");
+  await page.getByRole("button", { name: "RESTORE CHECKPOINT" }).click();
+  const recovered = await snapshot(page);
+  expect(recovered.progress.controlUnlocked).toBe(true);
+  expect(recovered.progress.notes).toContain("archive");
+  expect(recovered.progress.remainingSeconds).toBeGreaterThan(RUN_SECONDS - 3);
+  expect(recovered.position.z).toBeLessThan(-19);
+  expect(recovered.tokens).toBe(3);
+  expect(recovered.enemy.grace).toBeGreaterThan(10);
+  await expect(page.locator("#threat-status")).toContainText("SAFE WINDOW");
+});
+
+test("shelters conceal after broken sight, preserve active time and expose witnessed entry", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  await poweredCheckpoint(page);
+  await page.evaluate(() =>
+    (window as any).__LAST_METRO__.setEnemy(1.5, -15, Math.PI),
+  );
+  await target(page, "hidePlatform");
+  expect((await snapshot(page)).hidden).toBe(true);
+  expect((await snapshot(page)).enemy.compromised).toBe(false);
+  expect((await snapshot(page)).flashlight).toBe(false);
+  const inside = await snapshot(page);
+  await holdForSimulation(page, "KeyW", 0.5);
+  expect((await snapshot(page)).position).toEqual(inside.position);
+  expect((await snapshot(page)).elapsed).toBeGreaterThan(inside.elapsed);
+  await expect(page.locator("#threat-status")).toContainText("CONCEALED");
+  await page.screenshot({ path: "test-results/phase3-shelter.png" });
+  await page.keyboard.press("KeyE");
+  expect((await snapshot(page)).hidden).toBe(false);
+  await page.evaluate(() => {
+    const b = (window as any).__LAST_METRO__;
+    b.goTo("hidePlatform");
+    b.setEnemy(3.55, -13.5, 0);
+    b.noise(3.55, -15);
+  });
+  await page.keyboard.press("KeyE");
+  expect((await snapshot(page)).enemy.compromised).toBe(true);
+  await expect(page.locator("#threat-status")).toContainText("EXPOSED");
+  await expect(
+    page.getByRole("heading", { name: "One breath too late." }),
+  ).toBeVisible();
+});
+
+test("tokens are limited and the service machine redirects an occluded enemy", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  await poweredCheckpoint(page);
+  await page.evaluate(() => (window as any).__LAST_METRO__.place(1.5, 10, 0));
+  for (let remaining = 2; remaining >= 0; remaining--) {
+    await page.keyboard.press("KeyQ");
+    await expect
+      .poll(async () => (await snapshot(page)).tokens)
+      .toBe(remaining);
+    await holdForSimulation(page, "KeyZ", 0.75);
+  }
+  await page.keyboard.press("KeyQ");
+  expect((await snapshot(page)).tokens).toBe(0);
+  await expect(page.locator("#toast")).toContainText("No tokens left");
+  await page.evaluate(() =>
+    (window as any).__LAST_METRO__.setEnemy(11, -2.5, Math.PI),
+  );
+  await target(page, "machine");
+  await expect
+    .poll(async () => (await snapshot(page)).enemy.state)
+    .toBe("Investigate");
+  await expect(page.locator("#sound-caption")).toContainText(
+    "Ventilation purge",
+  );
+  const activeUntil = (await snapshot(page)).machineUntil;
+  await page.keyboard.press("KeyE");
+  expect((await snapshot(page)).machineUntil).toBe(activeUntil);
+  await expect(page.locator("#toast")).toContainText("cooling down");
+  await page.keyboard.press("Escape");
+  await expectFrozen(page);
+  await page.getByRole("button", { name: "SETTINGS", exact: true }).click();
+  await page
+    .getByLabel("Voice volume", { exact: true })
+    .evaluate((input: HTMLInputElement) => {
+      input.value = "0.3";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  await page
+    .getByLabel("Ambience and effects volume", { exact: true })
+    .evaluate((input: HTMLInputElement) => {
+      input.value = "0.6";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  await page.reload();
+  await page.getByRole("button", { name: /SETTINGS/ }).click();
+  await expect(page.getByLabel("Voice volume", { exact: true })).toHaveValue(
+    "0.3",
+  );
+  await expect(
+    page.getByLabel("Ambience and effects volume", { exact: true }),
+  ).toHaveValue("0.6");
+});
+
+test("each shelter has a physical entrance and a wall cannot make a visible player invulnerable", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  await poweredCheckpoint(page);
+  for (const [id, x, z] of [
+    ["hidePlatform", 3.55, -15],
+    ["hideHall", 10.7, 4.5],
+    ["hideControl", 15.5, -21],
+  ] as const) {
+    await page.evaluate(
+      ({ x, z }) => (window as any).__LAST_METRO__.place(x, z + 1.5),
+      { x, z },
+    );
+    await holdForSimulation(page, "KeyW", 0.55);
+    await page.evaluate((id) => {
+      const b = (window as any).__LAST_METRO__,
+        p = b.targetPosition(id);
+      b.face(p.x, p.z, p.y);
+    }, id);
+    await expect.poll(async () => (await snapshot(page)).target).toBe(id);
+    await page.keyboard.press("KeyE");
+    expect((await snapshot(page)).hidden).toBe(true);
+    await page.keyboard.press("KeyE");
+    await holdForSimulation(page, "KeyS", 0.55);
+    expect((await snapshot(page)).position.z).toBeGreaterThan(z + 1);
+  }
+  await page.evaluate(() => {
+    const b = (window as any).__LAST_METRO__;
+    b.place(4.7, -8);
+    b.setEnemy(4.5, -5, 0);
+  });
+  await expect(
+    page.getByRole("heading", { name: "One breath too late." }),
+  ).toBeVisible();
+});
+
+test("the return poster changes with active-time spacing and the shadow is visible during chase", async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  await poweredCheckpoint(page);
+  await target(page, "dispatch");
+  await executeSequence(page);
+  await page.evaluate(() => {
+    const b = (window as any).__LAST_METRO__;
+    b.place(7.5, 3.8, Math.PI);
+  });
+  await page.keyboard.press("Escape");
+  await expectFrozen(page);
+  expect((await snapshot(page)).posterChanged).toBe(false);
+  await page.getByRole("button", { name: "RESUME JOURNEY" }).click();
+  await page.waitForFunction(
+    () => (window as any).__LAST_METRO__.snapshot().posterChanged,
+    undefined,
+    { timeout: 60000 },
+  );
+  await expect(page.locator("#sound-caption")).toContainText(
+    "YOU WERE EXPECTED",
+  );
+  await page.screenshot({ path: "test-results/phase3-poster.png" });
+  await page.evaluate(() => {
+    const b = (window as any).__LAST_METRO__;
+    b.place(1.5, -8);
+    b.setEnemy(1.5, -15, Math.PI);
+  });
+  await expect
+    .poll(async () => (await snapshot(page)).enemy.state)
+    .toBe("Chase");
+  await expect(page.locator("#threat-status")).toContainText("SEEN");
+  await page.screenshot({ path: "test-results/phase3-pursuit.png" });
 });
