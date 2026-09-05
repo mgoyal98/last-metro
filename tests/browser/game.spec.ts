@@ -272,23 +272,17 @@ test("movement collides with walls and locked gate; menus freeze simulation", as
 }) => {
   await start(page);
   const initial = await snapshot(page);
-  await page.keyboard.down("KeyW");
-  await page.waitForTimeout(500);
-  await page.keyboard.up("KeyW");
+  await holdForSimulation(page, "KeyW", 0.6);
   expect((await snapshot(page)).position.z).toBeLessThan(
     initial.position.z - 0.25,
   );
   await page.evaluate(() =>
     (window as any).__LAST_METRO__.place(4.1, 10, -Math.PI / 2),
   );
-  await page.keyboard.down("KeyW");
-  await page.waitForTimeout(800);
-  await page.keyboard.up("KeyW");
+  await holdForSimulation(page, "KeyW", 0.8);
   expect((await snapshot(page)).position.x).toBeLessThan(4.75);
   await page.evaluate(() => (window as any).__LAST_METRO__.place(12, -5.8));
-  await page.keyboard.down("KeyW");
-  await page.waitForTimeout(800);
-  await page.keyboard.up("KeyW");
+  await holdForSimulation(page, "KeyW", 0.8);
   expect((await snapshot(page)).position.z).toBeGreaterThan(-6.65);
   await page.keyboard.press("KeyC");
   await page.keyboard.press("KeyF");
@@ -535,7 +529,10 @@ test("shelters conceal after broken sight, preserve active time and expose witne
   expect((await snapshot(page)).flashlight).toBe(false);
   const inside = await snapshot(page);
   await holdForSimulation(page, "KeyW", 0.5);
-  expect((await snapshot(page)).position).toEqual(inside.position);
+  const settled = (await snapshot(page)).position;
+  // The capsule can settle by a few micrometres against the shelter wall.
+  for (const axis of ["x", "y", "z"] as const)
+    expect(settled[axis]).toBeCloseTo(inside.position[axis], 3);
   expect((await snapshot(page)).elapsed).toBeGreaterThan(inside.elapsed);
   await expect(page.locator("#threat-status")).toContainText("CONCEALED");
   await page.screenshot({ path: "test-results/phase3-shelter.png" });
@@ -681,4 +678,167 @@ test("the return poster changes with active-time spacing and the shadow is visib
     .toBe("Chase");
   await expect(page.locator("#threat-status")).toContainText("SEEN");
   await page.screenshot({ path: "test-results/phase3-pursuit.png" });
+});
+
+test("optional hints reveal solutions explicitly, pause pursuit and reset when the puzzle changes", async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  await start(page);
+  await page.keyboard.press("KeyH");
+  await expect(
+    page.getByRole("dialog", { name: "Find emergency fuses" }),
+  ).toBeVisible();
+  await expectFrozen(page);
+  await expect(page.locator("#hint-content")).not.toContainText("Fuse A is on");
+  await page.getByRole("button", { name: "SHOW WHERE TO LOOK" }).click();
+  await expect(page.locator("#hint-content")).not.toContainText("Fuse A is on");
+  await page.getByRole("button", { name: "REVEAL SOLUTION" }).click();
+  await expect(page.locator("#hint-content")).toContainText("Fuse A is on");
+  await page.keyboard.press("Escape");
+  await target(page, "amber");
+  await page.keyboard.press("KeyH");
+  await expect(
+    page.getByRole("button", { name: "SHOW WHERE TO LOOK" }),
+  ).toBeVisible();
+  await expect(page.locator("#hint-content")).toContainText("B · blue");
+  expect((await snapshot(page)).progress.fuses).toEqual(["amber"]);
+  await page.keyboard.press("Escape");
+  await target(page, "blue");
+  await target(page, "cabinet");
+  await page.getByLabel("Circuit A route").selectOption("service");
+  await page.getByLabel("Circuit B route").selectOption("departure");
+  await page.getByRole("button", { name: "INSTALL FUSES & RESTORE" }).click();
+  await page.keyboard.press("KeyH");
+  await expect(
+    page.getByRole("dialog", { name: "Reconstruct staff access" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "SHOW WHERE TO LOOK" }).click();
+  await expect(page.locator("#hint-content")).not.toContainText(ACCESS_CODE);
+  await page.getByRole("button", { name: "REVEAL SOLUTION" }).click();
+  await expect(page.locator("#hint-content")).toContainText(ACCESS_CODE);
+  await expectFrozen(page);
+  expect((await snapshot(page)).progress.controlUnlocked).toBe(false);
+  await page.screenshot({ path: "test-results/phase4-hints.png" });
+});
+
+test("help has a named keyboard-trapped dialog and returns to title or pause", async ({
+  page,
+}) => {
+  await page.goto("/?test");
+  await page.getByRole("button", { name: "HOW TO PLAY" }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Find your way out." }),
+  ).toBeVisible();
+  await page.keyboard.press("Shift+Tab");
+  await expect(
+    page.getByRole("button", { name: "BACK", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(
+    page.getByRole("button", { name: "Close help", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "ENTER THE STATION" }).click();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "HOW TO PLAY" }).click();
+  await expectFrozen(page);
+  await page.getByRole("button", { name: "BACK", exact: true }).click();
+  expect((await snapshot(page)).screen).toBe("pause");
+  await page.screenshot({ path: "test-results/phase4-pause.png" });
+});
+
+test("large text contrast and low quality persist with readable compact clues and separated HUD", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  await start(page);
+  expect((await snapshot(page)).drawCalls).toBeLessThan(120);
+  await page.screenshot({ path: "test-results/phase4-platform.png" });
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "SETTINGS", exact: true }).click();
+  await page.getByLabel("Text size", { exact: true }).selectOption("large");
+  await page.getByLabel("High contrast interface").check();
+  await page.getByLabel("Automatic hint reminders").uncheck();
+  await page.getByLabel("Graphics quality").selectOption("low");
+  await page.setViewportSize({ width: 900, height: 600 });
+  await page.getByLabel("Text size", { exact: true }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: "test-results/phase4-accessibility.png" });
+  await page.getByRole("button", { name: "DONE", exact: true }).click();
+  await page.getByRole("button", { name: "RESUME JOURNEY" }).click();
+  await expect.poll(async () => (await snapshot(page)).renderScale).toBe(0.75);
+  await target(page, "diagram");
+  await expect(page.locator(".paper p").first()).toHaveCSS("font-size", "17px");
+  await expect(page.locator(".paper strong").first()).toHaveCSS(
+    "color",
+    "rgb(240, 241, 230)",
+  );
+  const overflow = await page
+    .locator(".paper")
+    .evaluate((el) => el.scrollWidth > el.clientWidth);
+  expect(overflow).toBe(false);
+  await page.screenshot({ path: "test-results/phase4-readable-note.png" });
+  await page.getByRole("button", { name: "PUT AWAY" }).click();
+  const objective = await page.locator(".objective-block").boundingBox(),
+    threat = await page.locator("#threat-meter").boundingBox();
+  expect(objective!.y + objective!.height).toBeLessThan(threat!.y);
+  await page.reload();
+  await page.getByRole("button", { name: "SETTINGS", exact: true }).click();
+  await expect(page.getByLabel("Text size", { exact: true })).toHaveValue(
+    "large",
+  );
+  await expect(page.getByLabel("High contrast interface")).toBeChecked();
+  await expect(page.getByLabel("Automatic hint reminders")).not.toBeChecked();
+  await expect(page.getByLabel("Graphics quality")).toHaveValue("low");
+});
+
+test("the loading shell is visible while the game module is delayed", async ({
+  page,
+}) => {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/src/game/Game.ts*", async (route) => {
+    await gate;
+    await route.continue();
+  });
+  try {
+    await page.goto("/?test", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#boot")).toBeVisible();
+    await expect(page.locator("#loading-status")).toContainText("Connecting");
+    await page.screenshot({ path: "test-results/phase4-loading.png" });
+    release();
+    await expect(
+      page.getByRole("button", { name: "ENTER THE STATION" }),
+    ).toBeVisible({ timeout: 20000 });
+    expect(
+      await page.evaluate(
+        () => performance.getEntriesByName("station-preparation").length,
+      ),
+    ).toBe(1);
+  } finally {
+    release();
+  }
+});
+
+test("a failed game download exposes a reload action that recovers the station", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  let fail = true;
+  await page.route("**/src/game/Game.ts*", async (route) => {
+    if (fail) {
+      fail = false;
+      await route.abort();
+    } else await route.continue();
+  });
+  await page.goto("/?test");
+  await expect(
+    page.getByRole("heading", { name: "The station lost its signal." }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "RELOAD STATION" }).click();
+  await expect(
+    page.getByRole("button", { name: "ENTER THE STATION" }),
+  ).toBeVisible({ timeout: 20000 });
 });

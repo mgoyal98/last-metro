@@ -10,10 +10,72 @@
     />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <title>Last Metro — Platform 09</title>
+    <style>
+      body {
+        margin: 0;
+        background: #0a1718;
+      }
+      #boot {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        gap: 20px;
+        text-align: center;
+        background: #0a1718;
+        color: #d7bd86;
+        font:
+          12px Arial,
+          sans-serif;
+        letter-spacing: 2px;
+      }
+      #boot strong {
+        font-size: 64px;
+        font-weight: 400;
+        letter-spacing: -3px;
+        color: #dfe4d5;
+      }
+      #boot small {
+        color: #a7bcb1;
+        font-size: 11px;
+        letter-spacing: 1px;
+      }
+      #boot progress {
+        width: 240px;
+        height: 3px;
+        accent-color: #d7bd86;
+      }
+      noscript {
+        position: fixed;
+        inset: 0;
+        padding: 25vh 10vw;
+        color: #e4e4d1;
+        background: #0a1718;
+        font:
+          18px Arial,
+          sans-serif;
+      }
+    </style>
   </head>
   <body>
     <canvas id="scene" aria-label="First-person view of Platform 09"></canvas>
-    <div id="app"></div>
+    <div id="app">
+      <div id="boot" role="status" aria-live="polite">
+        <strong>09</strong><span>LAST METRO</span
+        ><progress
+          id="loading-progress"
+          max="3"
+          value="0"
+          aria-label="Station preparation"
+        ></progress
+        ><small id="loading-status">Connecting to the station…</small
+        ><small>Headphones recommended · no combat</small>
+      </div>
+    </div>
+    <noscript
+      >Last Metro needs JavaScript to run. Enable it, then reload the
+      station.</noscript
+    >
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

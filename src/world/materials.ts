@@ -3,6 +3,7 @@ import {
   MeshStandardMaterial,
   RepeatWrapping,
   SRGBColorSpace,
+  BufferGeometry,
 } from "three";
 
 export function surface(
@@ -52,13 +53,58 @@ export function surface(
   const map = new CanvasTexture(canvas);
   map.colorSpace = SRGBColorSpace;
   map.wrapS = map.wrapT = RepeatWrapping;
-  map.repeat.set(kind === "floor" ? 3 : 2, kind === "floor" ? 8 : 1);
+  map.repeat.set(1, 1);
   map.anisotropy = 4;
+  const relief = document.createElement("canvas");
+  relief.width = relief.height = 512;
+  const height = relief.getContext("2d")!;
+  height.fillStyle = "#a9a9a9";
+  height.fillRect(0, 0, 512, 512);
+  height.strokeStyle = "#454545";
+  height.lineWidth = kind === "metal" ? 1 : 3;
+  const rows = kind === "floor" ? 128 : kind === "wall" ? 64 : 16;
+  for (let y = 0; y <= 512; y += rows) {
+    height.beginPath();
+    height.moveTo(0, y);
+    height.lineTo(512, y);
+    height.stroke();
+    if (kind !== "metal")
+      for (let x = 0; x <= 512; x += 128) {
+        const offset = kind === "wall" && y % 128 === 0 ? 64 : 0;
+        height.beginPath();
+        height.moveTo(x + offset, y);
+        height.lineTo(x + offset, y + rows);
+        height.stroke();
+      }
+  }
+  const bump = new CanvasTexture(relief);
+  bump.wrapS = bump.wrapT = RepeatWrapping;
+  bump.anisotropy = 4;
   return new MeshStandardMaterial({
     map,
-    roughness: kind === "floor" ? 0.58 : 0.82,
+    bumpMap: bump,
+    bumpScale: kind === "wall" ? 0.018 : kind === "floor" ? 0.012 : 0.004,
+    roughness: kind === "floor" ? 0.72 : 0.82,
     metalness: kind === "metal" ? 0.55 : 0.08,
   });
+}
+
+/** Two metres per texture tile, independent of the size of each wall box. */
+export function scaleSurfaceUV(geometry: BufferGeometry): void {
+  const position = geometry.getAttribute("position"),
+    normal = geometry.getAttribute("normal"),
+    uv = geometry.getAttribute("uv");
+  for (let i = 0; i < uv.count; i++) {
+    const x = position.getX(i),
+      y = position.getY(i),
+      z = position.getZ(i);
+    uv.setXY(
+      i,
+      (Math.abs(normal.getX(i)) > 0.5 ? z : x) / 2,
+      (Math.abs(normal.getY(i)) > 0.5 ? z : y) / 2,
+    );
+  }
+  uv.needsUpdate = true;
 }
 
 export function signTexture(
@@ -77,15 +123,25 @@ export function signTexture(
   ctx.fillStyle = "#c5a55d";
   ctx.fillRect(0, height - 8, width, 8);
   lines.forEach((line, i) => {
-    ctx.font = `${i === 0 ? 600 : 400} ${lines.length === 1 ? height * 0.37 : i === 0 ? height * 0.29 : height * 0.18}px sans-serif`;
-    ctx.fillStyle = i === 0 ? color : "#a4babc";
+    let size =
+      lines.length === 1
+        ? height * 0.37
+        : i === 0
+          ? height * 0.29
+          : height * 0.18;
+    ctx.font = `${i === 0 ? 600 : 400} ${size}px sans-serif`;
+    size *= Math.min(
+      1,
+      (width - 64) / Math.max(1, ctx.measureText(line).width),
+    );
+    ctx.font = `${i === 0 ? 600 : 400} ${size}px sans-serif`;
+    ctx.fillStyle = i === 0 || color !== "#e7dfc6" ? color : "#b5c9c2";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(
       line,
       width / 2,
       lines.length === 1 ? height / 2 : height * (i === 0 ? 0.38 : 0.75),
-      width - 50,
     );
   });
   const map = new CanvasTexture(canvas);

@@ -1,0 +1,218 @@
+body {
+  --copy-size: 13px;
+  --hud-size: 12px;
+  --subtitle-size: 15px;
+}
+body[data-text-size="large"] {
+  --copy-size: 17px;
+  --hud-size: 15px;
+  --subtitle-size: 19px;
+}
+body .modal p,
+body .intro {
+  font-size: var(--copy-size);
+}
+body .modal .small-print {
+  font-size: calc(var(--copy-size) - 1px);
+}
+body .setting-row {
+  font-size: var(--copy-size);
+  gap: 24px;
+}
+body .modal button:not(.close-button),
+body .modal select {
+  font-size: calc(var(--copy-size) - 1px);
+}
+body .objective-block p {
+  font-size: var(--hud-size);
+}
+body .threat-meter {
+  font-size: calc(var(--hud-size) - 1px);
+}
+body .threat-meter small {
+  font-size: calc(var(--hud-size) - 2px);
+}
+body[data-text-size="large"] .threat-meter {
+  top: 245px;
+}
+body[data-text-size="large"] .objective-block {
+  max-width: 360px;
+}
+body .hint-link {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 16px;
+  margin: 0 0 24px;
+  border: 1px solid var(--line);
+  background: #1e3430;
+  color: var(--amber);
+}
+body .hint-stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 22px 0;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #758880;
+}
+body .hint-stages .revealed {
+  color: var(--amber);
+}
+body #hint-content article {
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+body .help-panel {
+  width: min(740px, calc(100% - 40px));
+}
+body .help-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 28px;
+  margin: 28px 0;
+}
+body .help-grid b,
+body .settings-heading {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--amber);
+  letter-spacing: 1.5px;
+}
+body .settings-heading {
+  margin: 30px 0 6px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+body .setting-row input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+body[data-motion="reduced"] * {
+  transition: none !important;
+}
+body[data-contrast="high"] .objective-block,
+body[data-contrast="high"] .threat-meter {
+  background: #071311;
+  padding: 12px 16px;
+  border-color: #f1d79c;
+}
+body[data-contrast="high"] .objective-block p,
+body[data-contrast="high"] .modal p,
+body[data-contrast="high"] .modal .small-print,
+body[data-contrast="high"] .setting-row {
+  color: #f0f1e6;
+}
+body[data-contrast="high"] .grain {
+  display: none;
+}
+body[data-contrast="high"] .modal {
+  background: #071311;
+  border-color: #a8b7a6;
+}
+body[data-contrast="high"] .paper,
+body[data-contrast="high"] .paper h2,
+body[data-contrast="high"] .paper strong,
+body[data-contrast="high"] .paper blockquote,
+body[data-contrast="high"] .paper li {
+  color: #f0f1e6;
+}
+body .paper li,
+body .paper blockquote {
+  font-size: var(--copy-size);
+}
+body .paper .circuit-note,
+body .paper .route-note {
+  font-size: var(--copy-size);
+}
+body .paper .route-note,
+body .paper .note-footer {
+  flex-wrap: wrap;
+}
+body[data-contrast="high"] .paper button,
+body[data-contrast="high"] .paper .note-footer > span {
+  color: #e2ebd9;
+  border-color: #99aa98;
+}
+body[data-contrast="high"] .paper .eyebrow {
+  color: #d7bd86;
+}
+body[data-contrast="high"] .hud-bottom,
+body[data-contrast="high"] .location-block {
+  background: #071311;
+  padding: 8px;
+}
+#messages {
+  position: absolute;
+  bottom: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 8px;
+  width: min(720px, calc(100% - 48px));
+  pointer-events: none;
+}
+#messages #subtitle,
+#messages #toast,
+#messages #sound-caption {
+  position: static;
+  transform: none;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 10px 16px;
+  text-align: center;
+  background: #071412ed;
+  line-height: 1.6;
+  font-size: var(--subtitle-size);
+  letter-spacing: 0;
+}
+#messages #toast,
+#messages #sound-caption {
+  font-size: var(--hud-size);
+}
+#messages #sound-caption {
+  color: #d1decc;
+  border-right: 2px solid #8fa697;
+}
+#messages #subtitle:not(.visible),
+#messages #toast:not(.visible),
+#messages #sound-caption:empty {
+  display: none;
+}
+body:not([data-screen="playing"]) #messages {
+  bottom: 14px;
+}
+body:not([data-screen="playing"]) #sound-caption {
+  display: none;
+}
+@media (max-width: 800px) {
+  body .help-grid {
+    grid-template-columns: 1fr;
+  }
+  body .modal.compact {
+    width: min(450px, calc(100% - 40px));
+  }
+  body .objective-block {
+    max-width: 310px;
+  }
+  body[data-text-size="large"] .objective-block {
+    max-width: 300px;
+  }
+  body .hud-bottom > span:first-child {
+    display: none;
+  }
+}
+@media (max-height: 700px) {
+  body .threat-meter {
+    top: 202px;
+  }
+  #messages {
+    bottom: 62px;
+  }
+  body[data-text-size="large"] .threat-meter {
+    top: 235px;
+  }
+}

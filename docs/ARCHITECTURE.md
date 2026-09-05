@@ -9,13 +9,15 @@ Pure game-state transitions are independent of the renderer and testable without
 ## Boundaries
 
 - `game/state.ts`: authoritative puzzle progression, orientation/countdown updates, safe checkpoint recovery, validation, v1-to-v2 migration and persistence.
+- `game/hints.ts`: read-only three-step guidance for the current puzzle; solutions use shared puzzle constants.
 - `game/puzzles.ts`: stable clue IDs, code components, service definitions, departure sequence and timing constants.
 - `game/physics.ts`: Rapier setup, kinematic movement and a collider box registry with revisions.
 - `game/navigation.ts`: grid routing, footprint clearance and segment/box sight queries against that registry.
 - `game/Enemy.ts`: six-state threat, hearing, awareness, hiding compromise and capture; no renderer dependencies.
 - `game/player.ts`: keyboard/mouse input, camera, movement intent.
 - `game/Game.ts`: lifecycle, simulation, interactions and checkpoints.
-- `world/`: scene construction, original procedural materials, target metadata.
+- `world/`: scene construction, world-scaled procedural materials, static render batches, target metadata and articulated shadow presentation.
+- `world/Shadow.ts`: original capsule/primitive rig; actual enemy displacement drives limbs and a soft contact shadow.
 - `audio/`: HRTF positional effects, listener movement, wall muffling, master/effects/voice buses and pauseable local voice buffers; no runtime speech service.
 - `audio/voices.ts`: canonical original PA scripts, subtitles, file names and generous subtitle durations.
 - `public/audio/` and `scripts/generate-voices.mjs`: committed mono PCM assets and optional offline authoring.
@@ -55,3 +57,20 @@ Enemy position, awareness, hiding, machine timing and token charges are transien
 All timing lives in the fixed active simulation, including thrown objects and spaced scares. AudioContext suspension freezes scheduled effects and voices in menus; resume restores gains and context time. Story subtitles preserve their remaining active duration. HRTF sources use distance attenuation and a lowpass filter when geometry occludes them. Every spoken clip uses the matching registry text; optional critical sound captions include footstep direction and obstruction. Synthetic voices are fetched from the same origin only when used.
 
 The changed return poster is separate from mandatory clues. An extra footstep and a Control ballast failure are one-shot events with at least 12–16 seconds of active spacing. Reduced flicker removes the short flashlight dim; its sound/caption remains.
+
+
+## Phase 4 presentation and accessibility
+
+Static HTML renders the station-loading shell before the game bundle. The small bootstrap dynamically imports the engine, then reports collision preparation and scene construction. Both flashlight shader configurations compile asynchronously behind the loading shell before the title accepts input. Startup failure exposes a reload action. Performance marks delimit `station-preparation`; this includes asset/module preparation and is not a GPU benchmark. The heavy physics download is still required, but it no longer gates the first loading message.
+
+Procedural tile and metal UVs use two metres per texture repeat on each box face, eliminating dimension-dependent stretching. Separate bump textures give grout and brushed metal restrained depth. Sign canvases follow their physical aspect ratio; fonts fit by size instead of horizontal compression. Light-paper secondary text uses the same dark ink as its heading.
+
+After scene construction, static boxes are grouped by material and merged for rendering. Gates, fuse targets, panel indicators, lamps and other interactive box targets remain individual meshes. Original solid meshes retain their geometry and frozen world matrices for interaction raycasts, but are detached from the render tree. Rapier colliders and the enemy's geometry registry are unchanged. Do not move a detached static mesh at runtime; dynamic geometry must remain outside the batch. Batching coarsens view culling, so more triangles may be submitted despite fewer draw calls; the fixed-view record is `docs/rendering-phase4.json`.
+
+High quality caps pixel ratio at 1.7 and includes three shelter accent lights. Low uses 75% of a capped 1× pixel ratio and disables those accent lights. DOM notes/menus retain their full resolution. Gameplay, timers, navigation and collision do not depend on this preset.
+
+Hints have three levels: direction, location, then explicitly revealed solution. Their UI state resets when the current puzzle key changes and on a new/restored attempt. They never dispatch puzzle actions or alter saves. H and the journal link open a paused hint dialog. Automatic reminders can be disabled independently. Help is available from the title and pause and returns to its originating context.
+
+Settings keep the existing v1 key and validate added text-size, high-contrast and auto-reminder fields; absent values receive defaults. V2 puzzle saves remain unchanged. Dialogs have accessible names and wrapped keyboard focus. Large text applies to evidence, hints, settings, HUD and subtitles; high contrast includes paper clues and their controls. Subtitles, captions and toasts stack in a single region to avoid overlaps. Reduced-motion settings also suppress interface transitions.
+
+Audible PA clips lower the effects bus to 40% of its selected volume, then restore that volume after playback or cancellation. Muted voices do not duck effects. Context suspension remains responsible for pausing both voice and effects. Chase captions take priority over routine footsteps, while identical captions avoid repeated DOM text replacement. Automated checks cover these transitions; subjective mix/voice assessment remains a human playtest gate.

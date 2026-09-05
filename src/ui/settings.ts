@@ -7,6 +7,9 @@ export interface Settings {
   reducedMotion: boolean;
   reducedFlicker: boolean;
   captions: boolean;
+  autoHints: boolean;
+  highContrast: boolean;
+  textSize: "standard" | "large";
   quality: "low" | "high";
 }
 export const defaults: Settings = {
@@ -18,6 +21,9 @@ export const defaults: Settings = {
   reducedMotion: true,
   reducedFlicker: true,
   captions: true,
+  autoHints: true,
+  highContrast: false,
+  textSize: "standard",
   quality: "high",
 };
 export function readSettings(): Settings {
@@ -39,9 +45,16 @@ export function readSettings(): Settings {
       if (typeof value === "number" && Number.isFinite(value))
         s[key] = Math.min(volume ? 1 : 1.8, Math.max(volume ? 0 : 0.4, value));
     }
-    for (const key of ["reducedMotion", "reducedFlicker", "captions"] as const)
+    for (const key of [
+      "reducedMotion",
+      "reducedFlicker",
+      "captions",
+      "autoHints",
+      "highContrast",
+    ] as const)
       if (typeof parsed[key] === "boolean") s[key] = parsed[key];
     if (parsed.quality === "low") s.quality = "low";
+    if (parsed.textSize === "large") s.textSize = "large";
     return s;
   } catch {
     return { ...defaults };

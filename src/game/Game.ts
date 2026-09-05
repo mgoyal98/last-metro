@@ -77,12 +77,14 @@ export class Game {
   private dragging = false;
   private currentTarget: Target | null = null;
   private settingsReturn: Screen = "title";
+  private helpReturn: Screen = "title";
   private lastTime = 0;
   private accumulator = 0;
   private elapsed = 0;
   private subtitleRemaining = 0;
   private announcement = "";
   private captionRemaining = 0;
+  private captionPriority = 0;
   private persistentStorage = true;
   private nextStep = 0;
   private introPlayed = false;
@@ -110,14 +112,13 @@ export class Game {
     this.resize();
     this.bindInput(canvas);
     this.station.apply(this.state);
-    this.show("title");
+    this.show("loading");
     this.ui.onAction = (action) => this.action(action);
     this.ui.onSettings = (key, value) => {
       this.settings = { ...this.settings, [key]: value };
       storeSettings(this.settings);
       this.applySettings();
     };
-    this.renderer.setAnimationLoop((time) => this.frame(time));
     if (import.meta.env.DEV && new URLSearchParams(location.search).has("test"))
       this.installTestBridge();
     canvas.addEventListener("webglcontextlost", (event) => {
@@ -130,18 +131,38 @@ export class Game {
     canvas.addEventListener("webglcontextrestored", () => location.reload());
   }
 
-  static async create(canvas: HTMLCanvasElement): Promise<Game> {
+  static async create(
+    canvas: HTMLCanvasElement,
+    stage: (text: string) => void = () => {},
+  ): Promise<Game> {
+    stage("Preparing movement and collision…");
     const physics = await initializePhysics();
-    return new Game(canvas, new Station(physics));
+    stage("Lighting the station…");
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => resolve()),
+    );
+    const game = new Game(canvas, new Station(physics));
+    game.station.scene.updateMatrixWorld(true);
+    // Prepare both light configurations before accepting player input.
+    await game.renderer.compileAsync(game.station.scene, game.camera);
+    game.flashlight.visible = false;
+    await game.renderer.compileAsync(game.station.scene, game.camera);
+    game.show("title");
+    game.renderer.setAnimationLoop((time) => game.frame(time));
+    return game;
   }
 
   private applySettings(): void {
     this.renderer.setPixelRatio(
-      Math.min(devicePixelRatio, this.settings.quality === "low" ? 1 : 1.7),
+      this.settings.quality === "low"
+        ? Math.min(devicePixelRatio, 1) * 0.75
+        : Math.min(devicePixelRatio, 1.7),
     );
     this.renderer.toneMappingExposure = this.settings.brightness * 1.15;
     this.audio.setVolume(this.settings.volume);
     this.audio.setMix(this.settings.effectsVolume, this.settings.voiceVolume);
+    this.ui.applySettings(this.settings);
+    this.station.setQuality(this.settings.quality);
     if (!this.settings.captions) this.ui.caption("");
   }
   private resize(): void {
@@ -186,10 +207,12 @@ export class Game {
       this.dragging = false;
     });
     document.addEventListener("keydown", (event) => {
+      if (this.ui.screen === "loading") return;
       if (event.code === "Escape") {
         event.preventDefault();
         if (this.active) this.pause();
         else if (this.ui.screen === "settings") this.action("settings-back");
+        else if (this.ui.screen === "help") this.action("help-back");
         else if (
           this.ui.screen !== "title" &&
           this.ui.screen !== "ending" &&
@@ -205,6 +228,7 @@ export class Game {
       this.player.keys.add(event.code);
       if (event.repeat) return;
       if (event.code === "Tab") this.show("inventory");
+      if (event.code === "KeyH") this.show("hints");
       if (event.code === "KeyE") this.interact();
       if (event.code === "KeyQ") this.throwToken();
       if (event.code === "KeyF" && !this.hidden) {
@@ -233,6 +257,20 @@ export class Game {
       return;
     }
     switch (action) {
+      case "help":
+        this.helpReturn = this.started ? "pause" : "title";
+        this.show("help");
+        break;
+      case "help-back":
+        this.show(this.helpReturn);
+        break;
+      case "hints":
+        this.show("hints");
+        break;
+      case "hint-next":
+        this.ui.nextHint();
+        this.show("hints");
+        break;
       case "start":
         this.begin(freshProgress());
         break;
@@ -338,6 +376,7 @@ export class Game {
     }
   }
   private begin(state: Progress): void {
+    this.ui.resetHints();
     this.state = state.completed
       ? freshProgress()
       : state.remainingSeconds <= 0
@@ -362,7 +401,7 @@ export class Game {
     this.lightEvent = false;
     this.station.changePoster(false);
     this.station.showToken(0, 0, 0, false);
-    this.station.animateThreat(this.enemy, 0);
+    this.station.animateThreat(this.enemy);
     this.audio.stopVoice();
     this.elapsed = 0;
     this.subtitleRemaining = 0;
@@ -656,17 +695,21 @@ export class Game {
                 : "ahead";
         this.caption(
           `[ Heavy footsteps ${side}${this.enemy.navigation.sight(this.enemy.position, this.camera.position) ? "" : ", beyond the wall"}. ]`,
+          0,
         );
       }
     }
     if (oldState !== "Chase" && this.enemy.state === "Chase") {
-      this.caption("[ A sharp breath. Fast footsteps — you have been seen. ]");
+      this.caption(
+        "[ A sharp breath. Fast footsteps — you have been seen. ]",
+        2,
+      );
       this.ui.toast(
         "SEEN · Sprint to break sight, then hide. A token will not distract it while it can see you.",
       );
       this.spatial("warning", this.enemy.position);
     }
-    this.station.animateThreat(this.enemy, this.elapsed);
+    this.station.animateThreat(this.enemy);
     if (this.enemy.captured) {
       this.show("captured");
       return;
@@ -741,10 +784,12 @@ export class Game {
       ),
     );
   }
-  private caption(text: string): void {
+  private caption(text: string, priority = 1): void {
     if (!this.settings.captions) return;
+    if (this.captionRemaining > 0 && priority < this.captionPriority) return;
     this.ui.caption(text);
     this.captionRemaining = 4;
+    this.captionPriority = priority;
   }
   private frame(time: number): void {
     if (this.destroyed) return;
@@ -797,7 +842,8 @@ export class Game {
       }
       if (this.elapsed > this.nextHint) {
         this.nextHint = this.elapsed + 90;
-        this.ui.toast(hint(this.state));
+        if (this.settings.autoHints)
+          this.ui.toast(`${hint(this.state)} H opens optional hints.`);
       }
       this.currentTarget = this.findTarget();
       this.ui.interaction(
@@ -845,6 +891,8 @@ export class Game {
         tokens: this.tokens,
         machineUntil: this.machineUntil,
         posterChanged: this.posterChanged,
+        settings: { ...this.settings },
+        renderScale: this.renderer.getPixelRatio(),
       }),
       goTo: (id: TargetId) => {
         const target = this.station.targets.find((item) => item.id === id)!;

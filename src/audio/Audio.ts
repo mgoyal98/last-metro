@@ -61,7 +61,12 @@ export class StationAudio {
   setMix(effects: number, voice: number): void {
     this.effectsVolume = effects;
     this.voiceVolume = voice;
-    if (this.effects) this.effects.gain.value = effects;
+    if (this.effects && this.context)
+      this.effects.gain.setTargetAtTime(
+        effects * (this.voiceSource && voice > 0 ? 0.4 : 1),
+        this.context.currentTime,
+        0.12,
+      );
     if (this.speech) this.speech.gain.value = voice * 4;
   }
   listen(p: Point & { y: number }, yaw: number): void {
@@ -101,10 +106,14 @@ export class StationAudio {
         source.buffer = buffer;
         source.connect(this.speech!);
         this.voiceSource = source;
+        this.setMix(this.effectsVolume, this.voiceVolume);
         source.start();
         source.onended = () => {
           source.disconnect();
-          if (this.voiceSource === source) this.voiceSource = null;
+          if (this.voiceSource === source) {
+            this.voiceSource = null;
+            this.setMix(this.effectsVolume, this.voiceVolume);
+          }
         };
       })
       .catch(() => {
@@ -116,6 +125,7 @@ export class StationAudio {
     this.voiceSource?.stop();
     this.voiceSource?.disconnect();
     this.voiceSource = null;
+    this.setMix(this.effectsVolume, this.voiceVolume);
   }
   spatial(
     kind: "enemy" | "token" | "machine" | "warning",

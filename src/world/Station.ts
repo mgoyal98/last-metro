@@ -20,7 +20,9 @@ import type { Physics } from "../game/physics";
 import type { Progress } from "../game/state";
 import type { NoteId } from "../game/puzzles";
 import type { Enemy } from "../game/Enemy";
-import { signTexture, surface } from "./materials";
+import { signTexture, surface, scaleSurfaceUV } from "./materials";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
+import { Shadow } from "./Shadow";
 
 export type TargetId =
   | NoteId
@@ -54,7 +56,9 @@ export class Station {
   private controlCollider: RAPIER.Collider | null = null;
   private readonly displays = new Map<string, Mesh>();
   private displayState = "";
-  private shadow = new Group();
+  private readonly shadow = new Shadow();
+  private readonly staticBoxes: Mesh[] = [];
+  private readonly accentLights: PointLight[] = [];
   private readonly token = new Mesh(
     new CylinderGeometry(0.065, 0.065, 0.018, 10),
     new MeshStandardMaterial({
@@ -536,37 +540,63 @@ export class Station {
     );
     this.token.visible = false;
     this.scene.add(this.token);
-    // Human-scale silhouette; the game brain supplies position and visibility.
-    const shadowMat = new MeshBasicMaterial({ color: "#050c0c" });
-    const torso = new Mesh(new CylinderGeometry(0.22, 0.3, 1.2, 8), shadowMat);
-    torso.position.y = 1.0;
-    const head = new Mesh(new CylinderGeometry(0.15, 0.13, 0.33, 8), shadowMat);
-    head.position.y = 1.76;
-    this.shadow.add(torso, head);
-    for (const x of [-0.13, 0.13]) {
-      const leg = new Mesh(
-        new CylinderGeometry(0.085, 0.07, 0.65, 6),
-        shadowMat,
-      );
-      leg.position.set(x, 0.34, 0);
-      this.shadow.add(leg);
-    }
-    for (const x of [-0.32, 0.32]) {
-      const arm = new Mesh(
-        new CylinderGeometry(0.065, 0.075, 0.85, 6),
-        shadowMat,
-      );
-      arm.position.set(x, 0.98, 0);
-      this.shadow.add(arm);
-    }
-    this.shadow.position.set(1.7, 0, -17.5);
-    this.shadow.visible = false;
-    this.scene.add(this.shadow);
+    this.scene.add(this.shadow.group);
+    this.batchScenery();
   }
+  private batchScenery(): void {
+    const movable = new Set<Mesh>([
+      this.gate,
+      this.controlGate,
+      this.panelLight,
+      ...this.lamps,
+      ...this.targets.map((target) => target.mesh),
+    ]);
+    const groups = new Map<Mesh["material"], Mesh[]>();
+    for (const mesh of this.staticBoxes) {
+      if (movable.has(mesh)) continue;
+      const meshes = groups.get(mesh.material) ?? [];
+      meshes.push(mesh);
+      groups.set(mesh.material, meshes);
+    }
+    this.scene.updateMatrixWorld(true);
+    for (const [material, meshes] of groups) {
+      const geometries = meshes.map((mesh) =>
+        mesh.geometry.clone().applyMatrix4(mesh.matrixWorld),
+      );
+      const geometry = mergeGeometries(geometries);
+      geometries.forEach((item) => item.dispose());
+      if (!geometry) continue;
+      const batch = new Mesh(geometry, material);
+      batch.name = "static-station-batch";
+      this.scene.add(batch);
+      // Keep each original collision mesh's geometry and world matrix for
+      // interaction raycasts. It no longer incurs a rendering draw call.
+      for (const mesh of meshes) this.scene.remove(mesh);
+    }
+  }
+  setQuality(quality: "high" | "low"): void {
+    for (const light of this.accentLights) light.visible = quality === "high";
+  }
+
   private cover(id: TargetId, x: number, z: number, label: string): void {
     this.box(x - 0.9, 1.05, z, 0.15, 2.1, 2, this.metal);
     this.box(x + 0.9, 1.05, z, 0.15, 2.1, 2, this.metal);
     this.box(x, 1.05, z - 1, 1.8, 2.1, 0.15, this.metal);
+    this.box(x, 2.12, z, 1.95, 0.12, 2.1, this.dark);
+    this.box(x, 0.018, z + 0.96, 1.6, 0.03, 0.1, this.brass, false);
+    for (const side of [-1, 1])
+      this.box(
+        x + side * 0.8,
+        1.05,
+        z + 1.08,
+        0.035,
+        2,
+        0.025,
+        this.brass,
+        false,
+      );
+    this.box(x, 1.98, z - 0.85, 0.7, 0.045, 0.06, this.glow, false);
+    this.accentLights.push(this.point(x, 1.8, z - 0.5, "#98cbbd", 3.5, 3));
     this.sign(
       [label, "BREAK SIGHT / STEP INSIDE"],
       x,
@@ -585,14 +615,8 @@ export class Station {
     );
     this.target(id, "Hide in shelter · break sight first", marker, [x, z]);
   }
-  animateThreat(enemy: Enemy, time: number): void {
-    this.shadow.visible = enemy.state !== "Dormant";
-    this.shadow.position.set(
-      enemy.position.x,
-      Math.sin(time * 5) * 0.013,
-      enemy.position.z,
-    );
-    this.shadow.rotation.y = enemy.yaw;
+  animateThreat(enemy: Enemy): void {
+    this.shadow.update(enemy);
   }
   showToken(x: number, y: number, z: number, visible: boolean): void {
     this.token.visible = visible;
@@ -617,7 +641,15 @@ export class Station {
     material: MeshStandardMaterial | MeshBasicMaterial,
     solid = true,
   ): Mesh {
-    const mesh = new Mesh(new BoxGeometry(w, h, d), material);
+    const geometry = new BoxGeometry(w, h, d);
+    if (
+      material === this.tile ||
+      material === this.floor ||
+      material === this.metal
+    )
+      scaleSurfaceUV(geometry);
+    const mesh = new Mesh(geometry, material);
+    this.staticBoxes.push(mesh);
     mesh.position.set(x, y, z);
     this.scene.add(mesh);
     if (solid) {
@@ -640,7 +672,13 @@ export class Station {
     const mesh = new Mesh(
       new PlaneGeometry(w, h),
       new MeshBasicMaterial({
-        map: signTexture(lines, 1024, 256, color, background),
+        map: signTexture(
+          lines,
+          1024,
+          Math.max(128, Math.min(768, Math.round((1024 * h) / w))),
+          color,
+          background,
+        ),
         side: DoubleSide,
       }),
     );
@@ -772,7 +810,12 @@ export class Station {
     const mesh = this.displays.get(id)!;
     const material = mesh.material as MeshBasicMaterial;
     material.map?.dispose();
-    material.map = signTexture(lines);
+    const { width, height } = (mesh.geometry as PlaneGeometry).parameters;
+    material.map = signTexture(
+      lines,
+      1024,
+      Math.max(128, Math.min(768, Math.round((1024 * height) / width))),
+    );
     material.needsUpdate = true;
   }
   location(position: Vector3): string {

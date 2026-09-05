@@ -4,8 +4,8 @@ Station geometry, materials, signs, noise effects and scripts are original proje
 
 | Asset | Source / authoring | Rights / provenance | Trigger / use |
 | --- | --- | --- | --- |
-| Station geometry, shadow, three shelters, purge unit, tokens | `src/world` | Project-authored geometry | Rooms, active threat and stealth interactions |
-| Materials, route graphics, signs and changed poster | `src/world` | Project-authored canvas graphics | Environment; poster changes on the return through the hall |
+| Station geometry, articulated shadow, three dressed shelters, purge unit, tokens | `src/world` | Project-authored geometry | Rooms, active threat and stealth interactions |
+| World-scaled materials, bump maps, route graphics, signs and changed poster | `src/world` | Project-authored canvas graphics | Environment; poster changes on the return through the hall |
 | Hum, interaction effects, enemy steps, token, purge and tension sounds | `src/audio/Audio.ts` | Project-authored oscillator synthesis | Interactions, positional threat cues and spaced scares |
 | PA scripts and subtitles | `src/audio/voices.ts` | Original project text | All four voiced announcements |
 | Staff and archive transcripts | `src/ui/notes.ts` | Original project text | Readable, retained puzzle evidence |
@@ -25,3 +25,13 @@ Format: mono 22,050 Hz / 16-bit PCM WAV. Total: 1,016,076 bytes (about 0.97 MiB)
 The [eSpeak NG project](https://github.com/espeak-ng/espeak-ng) is GPL-3.0-or-later; [its built-in formant synthesis](https://espeak.sourceforge.net/) produces speech from text without an external speaker model. FFmpeg is used only as an offline authoring executable. Neither tool is bundled with the game. The asset register distinguishes generated original-script sound from distributing those authoring programs; see the [GNU output FAQ](https://www.gnu.org/licenses/gpl-faq.html.en#GPLOutput) for the general output distinction. No source-code licence grant has been chosen for this private project.
 
 Record source, licence, attribution, redistribution terms, subtitle and trigger before adding future external assets. Final human voice acting and perceived mix quality remain polish/playtest work.
+
+
+## Phase 4 additions
+
+- `src/world/Shadow.ts`: project-authored primitive/capsule rig, displacement-driven gait and a generated radial contact-shadow texture. No external model or motion capture data.
+- `src/world/materials.ts`: project-authored grayscale relief maps, physical UV scale and aspect-correct sign canvases. No external image service or texture download.
+- `src/world/Station.ts`: shelter roofs, threshold markers, vertical trim and accent lights; authored geometry using existing project materials.
+- `index.html`: original typographic loading shell. `src/game/hints.ts` and help text are original guidance based on the existing puzzle constants.
+
+The four PA recordings are unchanged. Phase 4 adjusts their runtime mix and subtitle presentation; no new voice licence or generation dependency is introduced.

@@ -82,9 +82,9 @@ body:not([data-screen="title"]):not([data-screen="playing"]) #overlay {
   font-size: 7px;
 }
 .small-print {
-  font-size: 10px !important;
-  color: #85998c !important;
-  line-height: 1.8 !important;
+  font-size: 10px;
+  color: #85998c;
+  line-height: 1.8;
 }
 .setting-row {
   display: flex;
@@ -267,7 +267,7 @@ select {
 }
 .panel-feedback {
   min-height: 40px;
-  font-size: 11px !important;
+  font-size: var(--copy-size, 13px);
   color: #c9b887 !important;
 }
 .ending-screen {

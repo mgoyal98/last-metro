@@ -2,7 +2,7 @@
 
 - Read `docs/PROGRESS.md` and `docs/ROADMAP.md` before starting a milestone. The two root game-design documents remain the scope baseline.
 - Keep the existing `src/game`, `src/world`, `src/audio`, `src/ui`, `src/styles`, `tests`, and `docs` boundaries. Update `docs/ARCHITECTURE.md` for structural decisions.
-- The current milestone is the phase-three threat/atmosphere alpha. Do not describe it as production ready; native Safari, hardware profiling and polish remain release gates.
+- The current milestone is the phase-four polish/accessibility beta. Do not describe it as production ready; user playtests, native Safari and reference-hardware profiling remain release gates.
 - Puzzle progression belongs in pure state transitions. Invalid inputs must preserve required items; loading must reject corrupt or impossible saves and restore a reachable checkpoint.
 - Keep puzzle constants in `src/game/puzzles.ts` and readable evidence in `src/ui/notes.ts`. Preserve v1 migration and v2 save invariants when adding milestones. Countdown advances only in the active simulation and expiry restores a fresh window at a safe milestone spawn.
 - Menus and focus loss must suspend simulation, clear held input, release pointer lock, and preserve active story subtitles. Every mandatory clue must have a readable DOM view.
@@ -15,3 +15,6 @@
 
 - Enemy and navigation logic stay independent of Three.js. All physical box additions/removals must update the shared registry. Pursuit, hiding, token/machine timing and horror events advance only during active simulation; capture restores valid v2 progress with grace.
 - Source must stay stable during browser suites to avoid Vite reloads. Voice scripts/subtitles share `src/audio/voices.ts`; generated audio is committed under `public/audio` and requires no runtime external service.
+
+- Static render batches retain detached collision meshes for raycasts. Gates, collectibles and changing indicators must stay outside those batches. Any change to batching must verify both interaction occlusion and the physical full route.
+- Hints must remain read-only and keep exact solutions behind an explicit reveal. Large text/high contrast must also apply to paper notes and controls; keep all three message types separated.

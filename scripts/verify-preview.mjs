@@ -30,12 +30,12 @@ await page.addInitScript(() => {
 });
 mkdirSync("test-results", { recursive: true });
 try {
-  await page.goto("http://127.0.0.1:4173/?test&v=0.3.0");
+  await page.goto("http://127.0.0.1:4173/?test&v=0.4.0");
   await expect(
     page.getByRole("button", { name: "ENTER THE STATION" }),
   ).toBeVisible();
   expect(await page.evaluate(() => "__LAST_METRO__" in window)).toBe(false);
-  await page.screenshot({ path: "test-results/phase3-title.png" });
+  await page.screenshot({ path: "test-results/phase4-title.png" });
   await page.getByRole("button", { name: "ENTER THE STATION" }).click();
   await expect(page.locator("#subtitle")).toContainText("For your safety");
   await expect
@@ -117,7 +117,7 @@ try {
   await page.getByLabel("Departure step 1").selectOption("isolate");
   await page.getByLabel("Departure step 2").selectOption("signal");
   await page.getByLabel("Departure step 3").selectOption("release");
-  await page.screenshot({ path: "test-results/phase3-dispatch.png" });
+  await page.screenshot({ path: "test-results/phase4-dispatch.png" });
   await page.getByRole("button", { name: "EXECUTE SEQUENCE" }).click();
   await expect(page.locator("#subtitle")).toContainText("Boarding is enabled");
   expect(
