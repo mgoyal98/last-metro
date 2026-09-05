@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-06",
+  "version": "0.4.1",
+  "browser": "Chrome 152.0.7977.76",
+  "renderer": "ANGLE / SwiftShader",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "devicePixelRatio": 1,
+  "view": "x=1.5, z=15, yaw=0, pitch=0; high after one active second, low after returning to identical view",
+  "prior": {
+    "version": "0.4.0",
+    "preset": "high",
+    "drawCalls": 71,
+    "triangles": 4116
+  },
+  "presets": {
+    "high": {
+      "drawCalls": 73,
+      "triangles": 8004,
+      "renderScale": 1
+    },
+    "low": {
+      "drawCalls": 73,
+      "triangles": 8004,
+      "renderScale": 0.75
+    }
+  },
+  "limits": "Single fixed-view diagnostic. Software timing omitted; this is not a hardware FPS benchmark or cold-loading measurement. Low changes resolution and accent lighting, not geometry."
+}

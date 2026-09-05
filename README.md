@@ -4,9 +4,9 @@
 
 A first-person atmospheric escape game set in a fictional Indian metro station. Built for desktop browsers with TypeScript, Three.js, Rapier, and Vite.
 
-**Current POC build: v0.4.0 / polish and accessibility milestone.** Restore power, reconstruct staff access, evade a listening shadow, and choose which train to board. Three puzzles, stealth and two endings are playable. This is not a production release. See [progress](docs/PROGRESS.md) for the verified state and [roadmap](docs/ROADMAP.md) for release gates.
+**Current POC build: v0.4.1 / materials, props and voice milestone.** Restore power, reconstruct staff access, evade a listening shadow, and choose which train to board. Three puzzles, stealth and two endings are playable. This is not a production release. See [progress](docs/PROGRESS.md) for the verified state and [roadmap](docs/ROADMAP.md) for release gates.
 
-![Last Metro polished station](docs/media/phase4-platform.png)
+![Last Metro station with Poly Haven materials and Blender props](docs/media/phase4a-platform.png)
 
 ## Development
 
@@ -73,7 +73,8 @@ src/
   ui/           DOM interface, settings, accessibility
   styles/       Menu and HUD styles
 tests/          State, navigation, threat, audio and browser checks
-scripts/        Optional offline voice authoring
+scripts/        Optional asset/voice authoring and validation
+assets/source/  Editable Blender props, provenance and verification manifests
 docs/           Roadmap, progress, architecture, QA, decisions
 public/         Static assets packaged with the game
 .github/        Continuous integration
@@ -81,11 +82,11 @@ public/         Static assets packaged with the game
 
 The two original design documents remain at the root as the design baseline. Runtime code stays in `src`; release assets go in `public`; generated build output is ignored. Dependencies are pinned and the lockfile is committed. No runtime API keys or backend are required.
 
-## Voice authoring
+## Assets and voice authoring
 
-Four original PA scripts are packaged as mono WAV files; players need no speech service. Normal installs and builds use the committed files. To regenerate them, install eSpeak NG 1.52.0 and FFmpeg 8.1, then run `node scripts/generate-voices.mjs`. Scripts and subtitles share `src/audio/voices.ts`. See [asset provenance](docs/ASSETS.md).
+The POC now uses Poly Haven tile/terrazzo materials, three original Blender props and four Google Gemini/Charon PA recordings. All shipped assets are committed; builds and gameplay need no API key. Exact scripts and subtitles share `src/audio/voices.ts`.
 
-Google AI Studio free-tier voice authoring is now prepared: [setup instructions](docs/VOICE-AUTHORING.md). Live generation needs a locally configured API key. The current preview still uses the bundled eSpeak takes. [Poly Haven/Blender follow-up](docs/ASSET-UPGRADE.md) is tracked before release.
+See [asset provenance](docs/ASSETS.md), [Blender/material reproduction](docs/ASSET-UPGRADE.md) and [Google voice setup and local verification](docs/VOICE-AUTHORING.md). Editable `.blend` files and manifests live under `assets/source`. Human listening and playtesting remain part of the release gates.
 
 ## Working agreement
 
