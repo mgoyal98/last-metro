@@ -1,6 +1,6 @@
 # Phase 4 — Polish and accessibility
 
-Status: in development. Baseline: `v0.3.0-alpha`.
+Status: complete locally at `v0.4.0-beta`. Baseline: `v0.3.0-alpha`. Verification and remaining release gates: [QA](QA.md).
 
 ## Deliverable
 

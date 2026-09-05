@@ -1,0 +1,24 @@
+{
+  "date": "2026-09-05",
+  "browser": "Chrome 152.0.7977.76",
+  "renderer": "ANGLE / SwiftShader",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "devicePixelRatio": 1,
+  "preset": "high",
+  "view": "fresh start at x=1.5, z=15; yaw=0, pitch=0",
+  "before": {
+    "version": "0.3.0",
+    "drawCalls": 313,
+    "triangles": 3396
+  },
+  "after": {
+    "version": "0.4.0",
+    "drawCalls": 71,
+    "triangles": 4116
+  },
+  "drawCallReductionPercent": 77.3,
+  "limits": "Single fixed-view diagnostic after one active simulation second. Not a hardware FPS benchmark. Merged batches reduce culling granularity, so submitted triangles rise slightly."
+}

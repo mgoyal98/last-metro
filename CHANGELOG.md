@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.0 Beta — 2026-09-05
+
+Polish and accessibility on the complete escape/threat loop.
+
+- Staged optional hints with explicit solution reveal, H shortcut and journal access; title/pause help covers controls and stealth.
+- Persistent large text, high contrast and automatic-reminder settings; named dialogs, wrapped keyboard focus and stacked messages.
+- World-scaled tile and metal textures with relief, aspect-correct signs and clearer paper-note ink.
+- Articulated shadow gait, contact shadow, dressed shelters and quality-dependent accent lighting.
+- Static scenery batching: 313 → 71 draw calls at the measured starting view; low quality also reduces scene resolution.
+- Immediate loading shell, preparation stages, shader preparation before play, recoverable engine-download failure and PA/effects mix ducking.
+- Expanded accessibility, hints, audio, startup recovery and rendering regression coverage; existing save formats and puzzle solutions stay compatible.
+
+This beta still requires user balance/audio playtests, native Safari, reference-hardware profiling and deployment/remote CI gates before production release.
+
 ## 0.3.0 Alpha — 2026-09-05
 
 Threat and atmosphere, preserving the complete escape loop and v2 checkpoints.
