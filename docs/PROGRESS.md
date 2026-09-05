@@ -4,9 +4,9 @@ Last updated: 2026-09-05
 
 ## Current milestone
 
-**Phase 3 complete locally — v0.3.0-alpha / threat and atmosphere.** Phase 2 remains recoverable at `v0.2.0-alpha`; Phase 0 + 1 at `v0.1.0-poc`.
+**Phase 4 in development — polish and accessibility.** Phase 3 remains recoverable at `v0.3.0-alpha`, phase 2 at `v0.2.0-alpha` and the original POC at `v0.1.0-poc`.
 
-Current scope and exit gates: `docs/MILESTONE-03.md`. Enemy navigation, stealth, distractions, capture recovery, spatial sound, packaged PA voices and spaced horror events are implemented. Existing v2 checkpoints and both endings remain playable. Validation evidence and precise limits are in `docs/QA.md`.
+Current scope and exit gates: `docs/MILESTONE-04.md`. Staged help, readable settings/HUD, materials, animation, loading and static rendering efficiency build on the verified phase-three escape loop.
 
 Play the built preview at [127.0.0.1:4173](http://127.0.0.1:4173/) while the preview server is running. To restart it: `npm run build && npm run preview -- --port 4173 --strictPort`. See `README.md` for controls.
 
