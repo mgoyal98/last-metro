@@ -35,3 +35,7 @@ Record source, licence, attribution, redistribution terms, subtitle and trigger 
 - `index.html`: original typographic loading shell. `src/game/hints.ts` and help text are original guidance based on the existing puzzle constants.
 
 The four PA recordings are unchanged. Phase 4 adjusts their runtime mix and subtitle presentation; no new voice licence or generation dependency is introduced.
+
+## Speech-service follow-up
+
+Google AI Studio authoring is prepared in `scripts/generate-google-voices.mjs`; see [setup and validation](VOICE-AUTHORING.md). No Google audio has been generated or shipped yet. The manifest above continues to describe the actual eSpeak files. Poly Haven/Blender asset work is tracked separately in [ASSET-UPGRADE.md](ASSET-UPGRADE.md).

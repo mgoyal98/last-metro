@@ -16,7 +16,8 @@
     "format": "prettier --write src tests scripts *.ts *.json index.html",
     "format:check": "prettier --check src tests scripts *.ts *.json index.html",
     "check": "npm run typecheck && npm run test && npm run format:check && npm run build",
-    "test:preview": "node scripts/verify-preview.mjs"
+    "test:preview": "node scripts/verify-preview.mjs",
+    "voices:google": "node scripts/generate-google-voices.mjs"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.20.0",

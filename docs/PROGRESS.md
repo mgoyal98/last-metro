@@ -6,7 +6,9 @@ Last updated: 2026-09-05
 
 **Phase 4 complete locally — polish and accessibility beta, `v0.4.0-beta`.** Prior milestones remain recoverable at `v0.3.0-alpha`, `v0.2.0-alpha` and `v0.1.0-poc`.
 
-Current scope and exit gates: `docs/MILESTONE-04.md`. Optional staged hints, larger readable clues, materials, animation, loading and static rendering efficiency are implemented on the complete escape loop.
+Active follow-up: [asset production](ASSET-UPGRADE.md). The procedural beta did not use Poly Haven or Blender. Google AI Studio TTS authoring is now prepared; actual generation awaits a locally configured API key. Authoring dry-run and `npm run check` pass with 49 unit tests; live Google generation remains unverified. Visual imports/model work remain planned.
+
+Completed beta scope and exit gates: `docs/MILESTONE-04.md`. Optional staged hints, larger readable clues, materials, animation, loading and static rendering efficiency are implemented on the complete escape loop.
 
 Play the built preview at [127.0.0.1:4173](http://127.0.0.1:4173/) while the preview server is running. To restart it: `npm run build && npm run preview -- --port 4173 --strictPort`. See `README.md` for controls.
 
@@ -87,3 +89,4 @@ Play the built preview at [127.0.0.1:4173](http://127.0.0.1:4173/) while the pre
 | 2026-09-05 | Polish and accessibility | Hints/help, large text/contrast, textured surfaces, articulated shadow, shelter dressing, batching and startup/mix improvements implemented |
 | 2026-09-05 | Phase 4 regressions | 45 unit tests pass; 20 unique browser cases pass across full/focused runs; startup shaders prepared before play; fixed-view rendering and screenshots reviewed |
 | 2026-09-05 | Phase 4 handoff | Built-preview smoke passed; QA, asset register, architecture and roadmap updated for the local beta; release gates remain phase 5 |
+| 2026-09-05 | Asset workflow correction | Recorded that the beta uses procedural art/eSpeak; added Google TTS authoring and setup instructions; natural voices await local API access, Poly Haven/Blender pass planned |

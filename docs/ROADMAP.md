@@ -9,6 +9,7 @@ Design baseline: the two original root documents. Milestones are acceptance driv
 | 2 — Complete escape loop | Three connected puzzles, retained notes, local checkpoint migration, generous countdown, two evidence-based endings | Both endings reachable; all wrong puzzle inputs recoverable; menus suspend timers | Complete locally; v0.2.0-alpha |
 | 3 — Threat and atmosphere | Six-state enemy, occluded sight, navigable routes, hiding, distractions, scripted events, spatial sound, packaged voices | Enemy cannot see through walls; hiding/noise rules fair; capture restores consistent progress | Complete locally; v0.3.0-alpha |
 | 4 — Polish and accessibility | Materials/assets, staged hints, loading, audio mix, accessibility review and balance (volume/caption/motion controls already implemented) | Clues readable; all critical sounds captioned; asset licences recorded; settings persist | Complete locally; v0.4.0-beta |
+| 4A — Asset production follow-up | Poly Haven material pass, Blender focal props, natural Google TTS recordings | Real assets integrated with provenance; visual/audio review and route/performance checks pass | Google authoring prepared; credentials pending; visual work planned; see ASSET-UPGRADE.md |
 | 5 — Release candidate | Cross-browser QA, performance profile, full-run playtests, hosting and rollback, release notes | Safari + Chromium on named reference Mac; measured performance; no critical regressions; deployment reviewed | Planned |
 
 ## POC contract

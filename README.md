@@ -83,6 +83,8 @@ The two original design documents remain at the root as the design baseline. Run
 
 Four original PA scripts are packaged as mono WAV files; players need no speech service. Normal installs and builds use the committed files. To regenerate them, install eSpeak NG 1.52.0 and FFmpeg 8.1, then run `node scripts/generate-voices.mjs`. Scripts and subtitles share `src/audio/voices.ts`. See [asset provenance](docs/ASSETS.md).
 
+Google AI Studio free-tier voice authoring is now prepared: [setup instructions](docs/VOICE-AUTHORING.md). Live generation needs a locally configured API key. The current preview still uses the bundled eSpeak takes. [Poly Haven/Blender follow-up](docs/ASSET-UPGRADE.md) is tracked before release.
+
 ## Working agreement
 
 Use small conventional commits (`docs:`, `chore:`, `feat:`, `fix:`, `test:`). Update `docs/PROGRESS.md` at each milestone with completed scope, validation, limitations, and next work. Keep production claims tied to the gates in the roadmap. Local commits are the initial recovery mechanism; a remote backup is still to be configured.
