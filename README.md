@@ -1,8 +1,10 @@
 # Last Metro
 
+**This project is a proof of concept (POC) for evaluating GPT-6's capabilities in game development.** It explores planning, implementation, debugging, testing, and iteration through a playable browser game.
+
 A first-person atmospheric escape game set in a fictional Indian metro station. Built for desktop browsers with TypeScript, Three.js, Rapier, and Vite.
 
-**Current milestone: v0.4.0 / polish and accessibility beta.** Restore power, reconstruct staff access, evade a listening shadow, and choose which train to board. Three puzzles, stealth and two endings are playable. This is not a production release. See [progress](docs/PROGRESS.md) for the verified state and [roadmap](docs/ROADMAP.md) for release gates.
+**Current POC build: v0.4.0 / polish and accessibility milestone.** Restore power, reconstruct staff access, evade a listening shadow, and choose which train to board. Three puzzles, stealth and two endings are playable. This is not a production release. See [progress](docs/PROGRESS.md) for the verified state and [roadmap](docs/ROADMAP.md) for release gates.
 
 ![Last Metro polished station](docs/media/phase4-platform.png)
 
