@@ -2,9 +2,9 @@
 
 A first-person atmospheric escape game set in a fictional Indian metro station. Built for desktop browsers with TypeScript, Three.js, Rapier, and Vite.
 
-**Current milestone: v0.2.0 / complete escape-loop alpha.** Restore power, reconstruct staff access, verify conflicting departure evidence, and choose which train to board. Three puzzles and two endings are playable. This is not a production release. See [progress](docs/PROGRESS.md) for the verified state and [roadmap](docs/ROADMAP.md) for release gates.
+**Current milestone: v0.3.0 / threat and atmosphere alpha.** Restore power, reconstruct staff access, evade a listening shadow, and choose which train to board. Three puzzles, stealth and two endings are playable. This is not a production release. See [progress](docs/PROGRESS.md) for the verified state and [roadmap](docs/ROADMAP.md) for release gates.
 
-![Last Metro escape-loop alpha](docs/media/phase2-title.png)
+![Last Metro threat and atmosphere alpha](docs/media/phase3-title.png)
 
 ## Development
 
@@ -34,16 +34,17 @@ Open [the local preview](http://127.0.0.1:4173). The server must be running. Che
 | Mouse | Look; hold and drag if pointer capture is unavailable |
 | Shift | Sprint |
 | C | Toggle crouch |
-| E | Inspect, collect, or operate |
+| E | Inspect, collect, operate, or enter/leave a shelter |
+| Q | Throw a metal token toward open floor |
 | F | Toggle flashlight |
 | Tab | Open journal; use Tab to navigate menu controls |
 | Escape | Pause or close a menu |
 
-Read the engineer’s note on the right platform wall first. Clues and recording transcripts stay in your journal. A spoiler walkthrough is in [QA](docs/QA.md) if you get stuck. Active enemy pursuit is the next phase.
+Read the engineer’s note on the right platform wall first. Clues and recording transcripts stay in your journal. A spoiler walkthrough is in [QA](docs/QA.md) if you get stuck. Power wakes the shadow after a 12-second warning. Walking is quiet; crouching is quieter; sprinting attracts it. Walls block its sight. Break sight, step inside a marked shelter and press E to hide. It remembers seeing you enter. A token can redirect it after you break sight; there are three per attempt. The ventilation purge beside the service entrance runs for eight seconds and can be reused after a 24-second cooldown.
 
-The 18-minute departure window starts after 30 seconds of active orientation or your first collected item/note. Menus and focus loss pause time. Expiry preserves completed puzzles and clues and restores a safe checkpoint with a fresh window.
+The 18-minute departure window starts after 30 seconds of active orientation or your first collected item/note. Menus and focus loss pause time. Expiry or capture preserves completed puzzles and clues and restores a safe checkpoint with a fresh window. Recovery also resets the shadow, grants 12 seconds of safety and replenishes three tokens. Hiding keeps time running; menus pause the enemy and audio as well as the clock.
 
-POC saves migrate automatically: fuses, notes and restored power are retained, while the new access and departure puzzles start unsolved. The legacy save is kept intact; the alpha writes a separate version 2 save. Saves belong to the browser and origin used to play.
+Existing v2 saves remain compatible. POC saves migrate automatically: fuses, notes and restored power are retained, while the new access and departure puzzles start unsolved. The legacy save is kept intact; the alpha writes a separate version 2 save. Saves belong to the browser and origin used to play.
 
 ## Validation
 
@@ -53,24 +54,29 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-The first command checks types, state tests, formatting, and the build. Browser checks cover progression, collision, focus/pause, saves, settings, and a continuous navigation route. See [QA](docs/QA.md) for the measured environment and remaining release gates.
+The first command checks types, state tests, formatting, and the build. Browser checks cover progression, collision, focus/pause, saves, settings, and a continuous navigation route. See [QA](docs/QA.md) for the measured environment and remaining release gates. With the built preview running, `npm run test:preview` checks production assets, audio and checkpoint interaction.
 
 ## Project map
 
 ```text
 src/
-  game/         Game orchestration, player, physics, state
+  game/         Game orchestration, player, collision navigation, enemy, state
   world/        Authored station geometry, materials, interactions
-  audio/        Procedural ambience and interaction cues
+  audio/        Spatial sound, bundled voice registry and audio mixing
   ui/           DOM interface, settings, accessibility
   styles/       Menu and HUD styles
-tests/          State and browser regression checks
+tests/          State, navigation, threat, audio and browser checks
+scripts/        Optional offline voice authoring
 docs/           Roadmap, progress, architecture, QA, decisions
 public/         Static assets packaged with the game
 .github/        Continuous integration
 ```
 
 The two original design documents remain at the root as the design baseline. Runtime code stays in `src`; release assets go in `public`; generated build output is ignored. Dependencies are pinned and the lockfile is committed. No runtime API keys or backend are required.
+
+## Voice authoring
+
+Four original PA scripts are packaged as mono WAV files; players need no speech service. Normal installs and builds use the committed files. To regenerate them, install eSpeak NG 1.52.0 and FFmpeg 8.1, then run `node scripts/generate-voices.mjs`. Scripts and subtitles share `src/audio/voices.ts`. See [asset provenance](docs/ASSETS.md).
 
 ## Working agreement
 

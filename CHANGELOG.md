@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0 Alpha — 2026-09-05
+
+Threat and atmosphere, preserving the complete escape loop and v2 checkpoints.
+
+- Six-state shadow with collision-derived navigation, occluded sight, graduated detection, noise investigation and last-seen search.
+- Three marked shelters, witnessed-entry consequences, limited throwable tokens and a reusable ventilation distraction.
+- Capture recovery with preserved puzzle progress, a fresh departure window, replenished tokens and a 12-second grace period.
+- Positional footsteps/effects, wall muffling, four bundled synthetic PA clips with subtitles, and separate master/effects/voice volume controls.
+- Spaced returning-poster, delayed-step and ballast-failure events, with reduced-flicker support.
+- Threat HUD, stealth instructions, capture screen and expanded navigation/threat/browser regression checks.
+
+Polish, user balance playtests, native Safari and hardware performance gates remain before production release.
+
 ## 0.2.0 Alpha — 2026-09-05
 
 Complete escape loop, extending the playable foundation.

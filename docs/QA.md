@@ -1,36 +1,34 @@
-# Phase 2 validation record
+# Phase 3 validation record
 
-Date: 2026-09-05. Build: 0.2.0 / complete escape-loop alpha. The original POC record is preserved in [QA-POC.md](QA-POC.md).
+Date: 2026-09-05. Build: 0.3.0 / threat and atmosphere alpha. Prior evidence: [phase 2](QA-PHASE2.md), [POC](QA-POC.md).
 
-## Environment
+## Environment and limits
 
 - macOS 26.4.1 (25E253), Google Chrome 152.0.7977.76, Playwright 1.62.1.
-- Automated WebGL uses ANGLE / SwiftShader at 1440 × 900; compact layout at 900 × 600.
-- Node 24.16.0, npm 11.17.0. Dependencies remain exactly pinned in `package-lock.json`.
-- This verifies automated functional behavior, not real-GPU frame rate, native Safari support, mouse comfort, or perceived audio quality.
+- Automated WebGL uses ANGLE / SwiftShader at 1440 × 900; compact menu at 900 × 600.
+- Node 24.16.0, npm 11.17.0. Runtime/test dependencies remain exactly pinned.
+- This is functional validation. Native Safari, real-GPU frame rate, perceived audio quality and first-time player balance remain unverified.
 
 ## Results
 
 | Check | Result |
 | --- | --- |
-| Strict TypeScript, formatting, production build | Pass |
-| State tests | 26 passed: all three puzzles, 27 switch combinations, incorrect access/routing, both endings, timer boundaries, recovery, corrupt saves and migration |
-| Audio regression | 1 passed: master volume restores after pause/resume |
-| Fresh run → Departure | Pass; all clues collected, wrong inputs retried, three puzzles solved, physical Bay A interaction and boarding |
-| Fresh run → Loop | Pass; same complete puzzle flow, physical Bay B interaction and boarding |
-| Countdown expiry | Pass; expiry screen blocks resume, safe Control checkpoint and clues restore with a fresh window, dispatch remains possible |
-| Countdown suspension | Pass; notes, inventory, cabinet, access, settings, pause/focus, dispatch and boarding menus freeze remaining time |
-| Movement/collision | Pass; platform wall and service gate block movement; crouch and flashlight controls respond |
-| Persistence/settings/corruption | Pass; items and settings survive reload, corrupt v2 save offers a fresh start |
-| Storage blocked | Pass; session checkpoint retains a fuse; paused announcement restores |
-| POC migration and Control gate | Pass; discoveries migrate, access remains unsolved, the locked gate blocks movement, unlocked gate permits crossing after reload, and restart restores the gate |
-| Continuous authored route | Pass; all required clues and puzzle controls reached by keyboard movement, followed by return to Bay A and Departure, without teleporting |
-| Visual checks | Title, evidence panel, both endings and built departure panel inspected; platform/compact screenshots generated and controls asserted |
-| Built-asset smoke | Pass; fresh start, pause, v2 Control checkpoint, E interaction and departure sequence work; no JS/network errors; test bridge absent |
+| Strict types, formatting and production build | Pass; tracked large-chunk warning remains |
+| Unit suite | 38 passed: 26 puzzle/save/time cases, 11 navigation/threat cases, one audio regression |
+| Navigation | Furniture avoidance, no corner cutting, physical gate invalidation, floor bounds, standing/crouching sight and occluded hearing pass |
+| Enemy states | Dormancy, grace, investigation, search, return, patrol, warning, chase and capture pass |
+| Fairness | Sight loss uses last seen location; visible pursuit ignores distractions; unwitnessed hiding conceals; witnessed entry stays exposed; wall-edge pursuit regression passes |
+| Existing browser suite | All ten cases pass: both endings from fresh starts, wrong inputs, collision, migration, corruption, settings, blocked storage, menus/focus and the complete physical route |
+| New browser mechanics | Five unique cases pass: pursuit/capture, concealment/witnessed entry, tokens/machine, every physical shelter entrance/wall-edge capture, and spaced return-poster/chase presentation |
+| Final focused checks | All five passed in 2.2 minutes: continuous physical route, pursuit/recovery, hiding, tokens/machine and all shelter entrances plus wall-edge capture |
+| Production preview | Pass: no development hooks; audio pause/resume, all four WAV decodes, v2 grace, physical dispatch, persistence and no JS/HTTP errors |
+| Visual review | Platform HUD, compact pause, shelter, capture, pursuit silhouette, changed poster, built title and dispatch inspected; six phase-three screenshots under `docs/media` |
 
-All 10 browser cases passed across the initial suite and final focused rerun. The migration case originally used a one-second movement delay that finished before crossing under software rendering; the replacement waits for the crossing and measures closed-gate movement in simulation time. A development-server reload caused by editing source during the first continuous-route run returned it to the title screen. With runtime source held stable, both focused reruns passed (20.1s migration/gates; 54.3s continuous route).
+All 15 unique browser cases passed across the initial suite and focused follow-ups. The initial 13-case browser suite passed in 4.2 minutes, with runtime source held stable. The five affected route/stealth cases passed again in 2.2 minutes, including the new physical shelter-entry case; the additional atmosphere/pursuit presentation case passed in 41.5 seconds. Final review found that the player's capsule could stand slightly closer to a wall than the enemy's navigation radius, producing an unreachable exact chase destination. Chase now selects a nearby reachable point on the same side, within capture range. Detection also holds its facing during the warning before chase. A new unit regression exercises that wall-edge case.
 
-Most browser tests use the explicitly enabled development bridge (`?test`) to position the player near targets, then press E and operate real UI controls. The continuous-route test uses keyboard movement through the entire station without teleporting. Timing tests shorten a development-only clock. Those helpers are compiled out of the production build.
+The first production smoke wrote a checkpoint while the current journey was active; intentional `pagehide` saving then replaced the injected fixture during reload. The reusable smoke now installs the fixture at page initialization. A parallel software-WebGL run also exceeded the initial five-second subtitle wait; the standalone rerun uses a 20-second bounded assertion and passes. This is a harness correction; actual checkpoint behavior remains unchanged.
+
+Browser helpers use `?test` to place a player or threat near a scenario, then operate physical E interactions and real menus. The complete-route case walks to every required clue and control and returns to Bay A without teleporting or disabling the enemy. New shelter-entry coverage starts outside each shelter and walks through its entrance. Direct enemy placement is a setup aid, not evidence of autonomous discovery. Unit tests and the real ventilation event separately exercise perception and routing.
 
 ## Reproduce
 
@@ -39,32 +37,31 @@ npm ci
 npm run check
 npx playwright install chromium
 npm run test:e2e
+npm run build
+npm run preview -- --port 4173 --strictPort
 ```
 
-On this Mac, the installed Chrome can be used directly:
+With the preview running, use a second terminal for `npm run test:preview`. On this Mac prefix browser commands with `CHROME_PATH='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'`.
 
-```sh
-CHROME_PATH='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' npm run test:e2e
-```
+Do not edit runtime source while browser checks run; Vite reloads the game. Hosted CI remains unverified until a Git remote is configured. The static preview smoke independently checks production-hook removal, voice decode, audio-clock suspension, retained subtitles, v2 recovery grace, physical dispatch interaction and persisted sequence, and rejects uncaught JS or HTTP failures.
 
-Do not edit runtime source during a browser run: Vite reloads the game. CI is configured to run static, unit, build and Chromium browser checks; hosted CI remains unverified until a remote repository is configured.
+## Stealth walkthrough
 
-## Walkthrough — spoilers
+Follow the [complete puzzle walkthrough](QA-PHASE2.md#walkthrough--spoilers); puzzle solutions and both endings are unchanged.
 
-1. Read the engineer’s note on the platform wall. Collect fuse A from the platform bench.
-2. Read the printed route map farther along the same wall. It identifies service **09**, **Daybreak**, **00:09**, **Bay A**.
-3. Enter the ticket hall and go around the barriers. Collect fuse B from the workbench near the service door.
-4. Read the shift record on the far wall: **night shift 48**. At the circuit cabinet, route **A → Service**, **B → Departure** and restore power.
-5. In Maintenance, inspect the PA recorder on the left wall: the code is **shift then locker**, two digits each. The locker card farther along gives **17**.
-6. Enter **4817** at the terminal beside the Control door. The live PA falsely advertises service **99**, **Home**, **Bay B**; its transcript is retained automatically.
-7. In Control, read the archived 23:58 recording on the west wall. It independently confirms **09 / Daybreak / 00:09 / A** and lists the departure sequence.
-8. Inspect the live service board on the right-hand desk monitor. It lists both requests; compare with the archive and printed map.
-9. Operate the brass departure control on the desk front. Set **Isolate PA → Set signal → Release brakes**, then execute.
-10. Return to the platform. Bay A is near the original spawn; Bay B is north, beyond the ticket hall opening. Inspect a boarding point and board **09 for Departure** or **99 for Loop**. Opening the journal or backing away remains possible before boarding.
+- Restoring power wakes the shadow after 12 active seconds. Pausing to read a clue also pauses pursuit.
+- Walk or crouch to reduce noise. A visible warning builds before chase; sprint is faster than the shadow.
+- Break sight around solid geometry. Shelters are on the north platform, by the ticket counter and beside Control's desk. Step inside and press E. Hiding freezes movement and turns off the flashlight; mouse look and the departure clock remain active.
+- If it sees you enter, the HUD reads **SHELTER EXPOSED**. Leave with E and break sight elsewhere.
+- Q throws one of three metal tokens onto open floor. The impact attracts a reachable enemy that cannot currently see you. Empty charges never consume puzzle items.
+- Run the ventilation purge near the service entrance to draw the enemy away from the access terminal. It pulses for eight seconds and can be reused after 24 seconds. Move away quietly while it investigates.
+- Capture preserves all clues and puzzle flags, refreshes the 18-minute window and token supply, and restores 12 seconds of grace at a safe milestone spawn. Escape cannot dismiss capture without recovery.
+- On the return through the ticket hall, a separate poster changes. Extra steps and a ballast failure are spaced one-shot events; required evidence remains readable.
 
 ## Release follow-up
 
-- Approximately 3.44 MB minified / 1.25 MB gzip initial assets. Rapier's embedded-WASM compatibility chunk accounts for ~2.85 MB / 1.09 MB gzip. The bundler's large-chunk warning remains tracked for cold-load/packaging optimization.
-- The 18-minute window is intentionally generous. Actual first-playthrough duration and pressure need user playtesting and retuning after active enemy behavior is introduced.
-- Voice recordings are currently readable, retained transcripts. Active enemy AI, hiding/distractions, capture recovery, spatial audio, voice assets and final horror/presentation polish remain later phases.
-- Cross-browser support requires full native Safari and Chromium runs on an identified hardware reference, with measured performance. No public deployment, Git remote, or hosted CI run is claimed.
+- Initial built HTML/CSS/JS is approximately 3.46 MB minified / 1.25 MB gzip; Rapier's embedded-WASM chunk is 2.85 MB / 1.09 MB gzip. Four on-demand WAV files add 1.02 MB uncompressed across the whole run.
+- Voice playback and decoding are verified; human listening, final voice acting and mix tuning remain polish tasks. Stored staff/dispatch evidence remains replayable text.
+- The 18-minute window, 12-second grace, three tokens and patrol/chase speeds need first-time user playtests for balance.
+- The shadow uses a simple procedural silhouette. Materials, hint presentation, final horror pacing and loading/performance work are phase 4.
+- Native Safari, named reference hardware measurements, public hosting, remote backup and hosted CI remain release gates. No production-readiness claim is made.
