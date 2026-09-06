@@ -1,6 +1,7 @@
 import {
   ACCESS_CODE,
   CONTROL_STEPS,
+  FUSE_SPECS,
   isNoteId,
   ORIENTATION_SECONDS,
   RUN_SECONDS,
@@ -61,8 +62,8 @@ export function transition(state: Progress, action: Action): Progress {
       };
     case "power":
       return state.fuses.length === 2 &&
-        action.a === "service" &&
-        action.b === "departure"
+        action.a === FUSE_SPECS.amber.circuit &&
+        action.b === FUSE_SPECS.blue.circuit
         ? { ...state, powered: true }
         : state;
     case "access":

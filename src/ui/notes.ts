@@ -8,7 +8,7 @@ export const noteText: Record<
   diagram: {
     title: "If the lights go out.",
     eyebrow: "ENGINEER’S NOTE / 17 AUGUST",
-    body: '<p>Two emergency fuses. I left <strong>fuse A on the platform bench</strong> and <strong>fuse B on the ticket hall workbench</strong>.</p><p>The cabinet is on the far wall of the ticket hall. Fit both fuses, then route:</p><div class="circuit-note"><span>A · AMBER</span><strong>→ SERVICE</strong><span>B · BLUE</span><strong>→ DEPARTURE</strong></div><p>Leave the ticket hall circuit disconnected. We only have enough power for the service door and the departure system.</p><p>Control still needs a staff code. Check the shift record in the hall, then the locker card and PA recorder in Maintenance.</p><p class="handwritten">If the PA says otherwise, trust what we wrote down. — R.</p>',
+    body: '<p>Two emergency fuses. I left <strong>fuse A on the platform bench</strong> and <strong>fuse B on the ticket hall workbench</strong>.</p><p>The cabinet is on the far wall of the ticket hall. Select a cartridge from the tray and press it into a holder:</p><div class="circuit-note"><span>A · AMBER</span><strong>→ SERVICE</strong><span>B · BLUE</span><strong>→ DEPARTURE</strong></div><p>Leave the ticket hall holder empty. Once A and B are seated, throw the main breaker. A wrong holder sparks and ejects the cartridge; recover it from the tray and try again. We only have enough power for the service door and the departure system.</p><p>Control still needs a staff code. Check the shift record in the hall, then the locker card and PA recorder in Maintenance.</p><p class="handwritten">If the PA says otherwise, trust what we wrote down. — R.</p>',
   },
   map: {
     title: "One way to Daybreak.",

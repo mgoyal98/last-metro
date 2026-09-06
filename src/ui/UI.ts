@@ -1,10 +1,13 @@
-import type { Progress, Route } from "../game/state";
+import type { Progress } from "../game/state";
 import { objective } from "../game/state";
 import { CONTROL_STEPS, isNoteId } from "../game/puzzles";
 import type { ControlStep } from "../game/puzzles";
 import { noteText } from "./notes";
 import type { Settings } from "./settings";
 import { hintGuide } from "../game/hints";
+import { freshFusePanel } from "../game/fusePanel";
+import type { FusePanelState, FusePanelResult } from "../game/fusePanel";
+import { fusePanelMarkup } from "./FusePanel";
 
 export type Screen =
   | "loading"
@@ -40,7 +43,7 @@ export class UI {
   onSettings: (key: keyof Settings, value: number | boolean | string) => void =
     () => {};
   constructor(root: HTMLElement) {
-    root.innerHTML = `<div class="vignette"></div><div class="grain"></div><div class="frame-top"><a class="brand" href="#" aria-label="Last Metro title">${logo}<span>LAST METRO</span></a><span class="build-tag">POC / ASSET PASS <i>v0.4.1</i></span></div><div id="overlay"></div><div id="hud" hidden><div class="objective-block"><span class="eyebrow">CURRENT OBJECTIVE</span><p id="objective"></p></div><div class="location-block"><span class="signal-dot"></span><span id="location">PLATFORM 09</span><small>ANTIM NAGAR · NIGHT LINE</small></div><div class="departure-clock"><span class="eyebrow">DEPARTURE WINDOW</span><strong id="countdown">18:00</strong><small id="clock-status">ORIENTATION</small></div><div id="threat-meter" class="threat-meter"><span id="threat-status">MOVE QUIETLY</span><small id="token-count">Q · 3 METAL TOKENS</small></div><div class="crosshair"></div><div id="interaction"></div><div class="hud-bottom"><span><kbd>W A S D</kbd> MOVE <kbd>E</kbd> INTERACT <kbd>TAB</kbd> JOURNAL <kbd>H</kbd> HINTS</span><span id="stance">STANDING · LIGHT ON</span><button data-action="pause" class="quiet-button">ESC &nbsp; PAUSE</button></div></div><div id="messages"><div id="subtitle" role="status" aria-live="polite"></div><div id="sound-caption" role="status" aria-live="polite"></div><div id="toast" role="status" aria-live="polite"></div></div>`;
+    root.innerHTML = `<div class="vignette"></div><div class="grain"></div><div class="frame-top"><a class="brand" href="#" aria-label="Last Metro title">${logo}<span>LAST METRO</span></a><span class="build-tag">POC / FUSE INTERACTION <i>v0.4.2</i></span></div><div id="overlay"></div><div id="hud" hidden><div class="objective-block"><span class="eyebrow">CURRENT OBJECTIVE</span><p id="objective"></p></div><div class="location-block"><span class="signal-dot"></span><span id="location">PLATFORM 09</span><small>ANTIM NAGAR · NIGHT LINE</small></div><div class="departure-clock"><span class="eyebrow">DEPARTURE WINDOW</span><strong id="countdown">18:00</strong><small id="clock-status">ORIENTATION</small></div><div id="threat-meter" class="threat-meter"><span id="threat-status">MOVE QUIETLY</span><small id="token-count">Q · 3 METAL TOKENS</small><small id="threat-advice">Break sight · E inside a shelter</small></div><div class="crosshair"></div><div id="interaction"></div><div class="hud-bottom"><span><kbd>W A S D</kbd> MOVE <kbd>E</kbd> INTERACT <kbd>TAB</kbd> JOURNAL <kbd>H</kbd> HINTS</span><span id="stance">STANDING · LIGHT ON</span><button data-action="pause" class="quiet-button">ESC &nbsp; PAUSE</button></div></div><div id="messages"><div id="subtitle" role="status" aria-live="polite"></div><div id="sound-caption" role="status" aria-live="polite"></div><div id="toast" role="status" aria-live="polite"></div></div>`;
     this.overlay = root.querySelector("#overlay")!;
     this.hud = root.querySelector("#hud")!;
     this.subtitle = root.querySelector("#subtitle")!;
@@ -53,6 +56,56 @@ export class UI {
       if (button) this.onAction(button.dataset.action!);
       if ((event.target as HTMLElement).closest(".brand"))
         event.preventDefault();
+    });
+    const clearDrop = () =>
+      root
+        .querySelectorAll(".drop-hover")
+        .forEach((el) => el.classList.remove("drop-hover"));
+    root.addEventListener("dragstart", (event) => {
+      const part = (event.target as HTMLElement).closest<HTMLElement>(
+        '.tray-fuse[draggable="true"]',
+      );
+      if (this.screen !== "cabinet" || !part) return;
+      event.dataTransfer?.setData(
+        "application/x-last-metro-fuse",
+        part.dataset.fuse!,
+      );
+      if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+    });
+    root.addEventListener("dragover", (event) => {
+      const socket = (event.target as HTMLElement).closest<HTMLButtonElement>(
+        ".fuse-socket",
+      );
+      if (
+        this.screen !== "cabinet" ||
+        !socket ||
+        socket.disabled ||
+        !event.dataTransfer?.types.includes("application/x-last-metro-fuse")
+      )
+        return;
+      event.preventDefault();
+      clearDrop();
+      socket.classList.add("drop-hover");
+      event.dataTransfer.dropEffect = "move";
+    });
+    root.addEventListener("drop", (event) => {
+      const socket = (event.target as HTMLElement).closest<HTMLButtonElement>(
+        ".fuse-socket",
+      );
+      clearDrop();
+      if (this.screen !== "cabinet" || !socket || socket.disabled) return;
+      event.preventDefault();
+      const fuse = event.dataTransfer?.getData("application/x-last-metro-fuse");
+      if (fuse === "amber" || fuse === "blue")
+        this.onAction(`fuse-drop:${fuse}:${socket.dataset.socket}`);
+    });
+    root.addEventListener("dragend", clearDrop);
+    root.addEventListener("dragleave", (event) => {
+      if (
+        !(event.relatedTarget instanceof Node) ||
+        !root.contains(event.relatedTarget)
+      )
+        clearDrop();
     });
     root.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -98,6 +151,7 @@ export class UI {
     settings: Settings,
     hasSave = false,
     note = "diagram",
+    panel: FusePanelState = freshFusePanel(state.powered),
   ): void {
     this.screen = screen;
     document.body.dataset.screen = screen;
@@ -119,7 +173,7 @@ export class UI {
     } else if (screen === "pause") {
       this.overlay.innerHTML = `<section class="modal compact">${close}<span class="eyebrow">TAKE A BREATH</span><h2>Station on hold.</h2><p>Your journey is paused. The station can wait.</p><div class="button-stack"><button class="primary" data-action="resume">RESUME JOURNEY <span aria-hidden="true">↗</span></button><button data-action="inventory">JOURNAL & INVENTORY</button><button data-action="settings">SETTINGS</button><button data-action="help">HOW TO PLAY</button><button data-action="checkpoint">LOAD CHECKPOINT</button><button class="text-button" data-action="title">RETURN TO TITLE</button></div><div class="controls-grid"><span><kbd>SHIFT</kbd> Sprint</span><span><kbd>C</kbd> Crouch</span><span><kbd>F</kbd> Flashlight</span><span><kbd>MOUSE</kbd> Look</span><span><kbd>Q</kbd> Throw token</span><span><kbd>E</kbd> Hide / leave</span></div><p class="small-print">Sprinting is loud. Break sight before entering a marked shelter; step inside and press E. Hiding in full view is unsafe. Q throws one of three tokens per checkpoint attempt. The service ventilation purge attracts attention for eight seconds, then cools down. Menus pause pursuit.<br><br>If mouse capture is unavailable, hold the mouse button and drag to look.</p></section>`;
     } else if (screen === "help") {
-      this.overlay.innerHTML = `<section class="modal help-panel">${close}<span class="eyebrow">BEFORE THE LAST TRAIN</span><h2>Find your way out.</h2><p>Explore the station, restore emergency power, reconstruct staff access and authorise departure. Keep your notes: the speakers may contradict the evidence.</p><div class="help-grid"><article><b>01 / EXPLORE</b><p>WASD moves. Mouse looks; hold and drag if mouse capture is unavailable. E reads or operates the object under the crosshair. Tab opens your journal. H opens optional hints.</p></article><article><b>02 / STAY QUIET</b><p>Shift sprints, C crouches and F toggles your flashlight. Sprinting is loud. Power wakes the shadow after 12 seconds. Break sight around a solid corner before hiding.</p></article><article><b>03 / MAKE SPACE</b><p>Walk inside a marked shelter and press E to hide or leave. It remembers seeing you enter. Q throws one of three tokens toward open floor. The service ventilation purge draws it away for eight seconds and can be reused after 24 seconds.</p></article><article><b>04 / TAKE YOUR TIME</b><p>Escape, the journal and every menu pause the enemy and departure clock. Hiding keeps time running. Capture preserves clues and solved puzzles, restores three tokens and gives a fresh window with 12 seconds of safety.</p></article></div><p class="small-print">No combat or stamina meter. Use Settings for larger text, contrast, sound captions, volume and motion options. This is a first-person visual game; menu accessibility does not make navigation fully playable without sight.</p><button class="primary" data-action="help-back">BACK <span aria-hidden="true">↗</span></button></section>`;
+      this.overlay.innerHTML = `<section class="modal help-panel">${close}<span class="eyebrow">BEFORE THE LAST TRAIN</span><h2>Find your way out.</h2><p>Explore the station, restore emergency power, reconstruct staff access and authorise departure. Keep your notes: the speakers may contradict the evidence.</p><p class="survival-rule"><strong>When chased:</strong> hold Shift to reach a solid corner, break sight, then step inside a marked shelter and press E. A shelter is unsafe if the shadow watched you enter. The flashlight does not repel it.</p><div class="help-grid"><article><b>01 / EXPLORE</b><p>WASD moves. Mouse looks; hold and drag if mouse capture is unavailable. E reads or operates the object under the crosshair. Tab opens your journal. H opens optional hints.</p></article><article><b>02 / STAY QUIET</b><p>Shift sprints, C crouches and F toggles your flashlight. Sprinting is loud. Power wakes the shadow after 12 seconds. Break sight around a solid corner before hiding.</p></article><article><b>03 / MAKE SPACE</b><p>Walk inside a marked shelter and press E to hide or leave. It remembers seeing you enter. After breaking sight, Q throws one of three tokens toward open floor. Tokens do not distract it while it can still see you. The service ventilation purge draws it away for eight seconds and can be reused after 24 seconds.</p></article><article><b>04 / TAKE YOUR TIME</b><p>Escape, the journal and every menu pause the enemy and departure clock. Hiding keeps time running. Capture preserves clues and solved puzzles, restores three tokens and gives a fresh window with 12 seconds of safety.</p></article></div><p class="small-print">No combat or stamina meter. Use Settings for larger text, contrast, sound captions, volume and motion options. This is a first-person visual game; menu accessibility does not make navigation fully playable without sight.</p><button class="primary" data-action="help-back">BACK <span aria-hidden="true">↗</span></button></section>`;
     } else if (screen === "hints") {
       const guide = hintGuide(state);
       if (this.hintKey !== guide.key) {
@@ -155,7 +209,7 @@ export class UI {
       const content = noteText[isNoteId(note) ? note : "diagram"];
       this.overlay.innerHTML = `<section class="modal paper">${close}<span class="eyebrow">${content.eyebrow}</span><h2>${content.title}</h2>${content.body}<div class="note-footer"><span>✓ SAVED TO JOURNAL</span><button data-action="resume">PUT AWAY <span aria-hidden="true">↗</span></button></div></section>`;
     } else if (screen === "cabinet") {
-      this.overlay.innerHTML = `<section class="modal cabinet">${close}<span class="eyebrow">STATION ELECTRICAL / PANEL 09</span><h2>Emergency power</h2><p>Fit both fuses and route the two circuits. The engineer’s diagram is posted on the platform wall.</p><div class="power-status"><span class="signal-dot"></span>${state.powered ? "ESSENTIAL SYSTEMS ONLINE" : `${state.fuses.length} / 2 FUSES AVAILABLE`}</div><div class="routing-row"><span><b>A</b> AMBER FUSE</span><select id="route-a" aria-label="Circuit A route"><option value="hall">Ticket hall</option><option value="service">Service</option><option value="departure">Departure</option></select></div><div class="routing-row"><span><b>B</b> BLUE FUSE</span><select id="route-b" aria-label="Circuit B route"><option value="hall">Ticket hall</option><option value="service">Service</option><option value="departure">Departure</option></select></div><p id="panel-feedback" role="status" class="panel-feedback">${state.powered ? "Service access unlocked. Departure controls available in Control." : "Incorrect routing is safe. Fuses are never consumed."}</p><button class="primary" data-action="power" ${state.powered ? "disabled" : ""}>${state.powered ? "POWER RESTORED" : "INSTALL FUSES & RESTORE"} <span aria-hidden="true">↗</span></button><button class="text-button" data-action="inventory">CONSULT JOURNAL</button></section>`;
+      this.overlay.innerHTML = `<section class="modal cabinet">${close}<span class="eyebrow">STATION ELECTRICAL / PANEL 09</span><h2>Emergency power</h2><p class="cabinet-intro">Fit the recovered cartridges into their holders, then throw the breaker. Station time is paused while you work.</p><div id="cabinet-content">${fusePanelMarkup(panel, state)}</div></section>`;
     } else if (screen === "access") {
       this.overlay.innerHTML = `<section class="modal compact access-panel">${close}<span class="eyebrow">CONTROL ACCESS / STAFF ONLY</span><h2>Who is on duty?</h2><p>Enter the four-digit staff code. The shift record, locker assignment and stored PA message contain its format.</p><form data-submit="access"><label class="code-label" for="access-code">STAFF ACCESS CODE</label><input id="access-code" class="code-input" name="code" type="text" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="off" placeholder="— — — —" required><p id="panel-feedback" class="panel-feedback" role="status">${state.controlUnlocked ? "Access already granted." : "Wrong attempts do not lock the terminal."}</p><button type="submit" class="primary">UNLOCK CONTROL <span aria-hidden="true">↗</span></button></form><button class="text-button" data-action="inventory">CONSULT JOURNAL</button></section>`;
     } else if (screen === "dispatch") {
@@ -199,6 +253,9 @@ export class UI {
       ? "high"
       : "standard";
     document.body.dataset.motion = settings.reducedMotion ? "reduced" : "full";
+    document.body.dataset.flicker = settings.reducedFlicker
+      ? "reduced"
+      : "full";
   }
   update(
     state: Progress,
@@ -221,8 +278,14 @@ export class UI {
     document.getElementById("stance")!.textContent =
       `${crouched ? "CROUCHED" : "STANDING"} · LIGHT ${flashlight ? "ON" : "OFF"}`;
   }
-  threat(status: string, tokens: number, danger: boolean): void {
+  threat(
+    status: string,
+    tokens: number,
+    danger: boolean,
+    advice: string,
+  ): void {
     document.getElementById("threat-status")!.textContent = status;
+    document.getElementById("threat-advice")!.textContent = advice;
     document.getElementById("token-count")!.textContent =
       `Q · ${tokens} METAL TOKEN${tokens === 1 ? "" : "S"}`;
     document.getElementById("threat-meter")!.classList.toggle("danger", danger);
@@ -261,13 +324,35 @@ export class UI {
           .value as ControlStep,
     );
   }
-  routes(): { a: Route; b: Route } {
-    return {
-      a: (document.getElementById("route-a") as HTMLSelectElement)
-        .value as Route,
-      b: (document.getElementById("route-b") as HTMLSelectElement)
-        .value as Route,
-    };
+  refreshCabinet(
+    panel: FusePanelState,
+    state: Progress,
+    result?: FusePanelResult,
+  ): void {
+    if (this.screen !== "cabinet") return;
+    const focus = (
+      document.activeElement as HTMLElement | null
+    )?.closest<HTMLElement>("[data-focus]")?.dataset.focus;
+    const next = document.createElement("div");
+    next.innerHTML = fusePanelMarkup(panel, state, result);
+    for (const selector of [".cabinet-plate", ".cabinet-actions"]) {
+      this.overlay
+        .querySelector(selector)!
+        .replaceWith(next.querySelector(selector)!);
+    }
+    // Keep the live region itself mounted so feedback is announced reliably.
+    const live = this.overlay.querySelector<HTMLElement>("#panel-feedback")!;
+    const message = next.querySelector<HTMLElement>("#panel-feedback")!;
+    live.className = message.className;
+    live.textContent = message.textContent;
+    if (state.powered)
+      this.overlay
+        .querySelector<HTMLElement>('.cabinet-actions [data-action="resume"]')
+        ?.focus();
+    else if (focus)
+      this.overlay
+        .querySelector<HTMLElement>(`[data-focus="${CSS.escape(focus)}"]`)
+        ?.focus();
   }
   feedback(text: string): void {
     document.getElementById("panel-feedback")!.textContent = text;

@@ -164,17 +164,38 @@ async function read(page: Page, id: string) {
   await expect(page.locator(".paper")).toBeVisible();
   await page.getByRole("button", { name: "PUT AWAY" }).click();
 }
+async function seatFusesAndPower(page: Page) {
+  await page
+    .getByRole("button", { name: "Select fuse A, amber", exact: true })
+    .click();
+  await page.getByRole("button", { name: /^Service socket, empty/ }).click();
+  await page
+    .getByRole("button", { name: "Select fuse B, blue", exact: true })
+    .click();
+  await page.getByRole("button", { name: /^Departure socket, empty/ }).click();
+  await page
+    .getByRole("button", { name: "Throw main breaker", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Main breaker on", exact: true }),
+  ).toBeDisabled();
+  await page
+    .getByRole("button", { name: "CLOSE CABINET", exact: true })
+    .click();
+}
 async function restorePower(page: Page) {
   await target(page, "amber");
   await target(page, "blue");
   await target(page, "cabinet");
-  await page.getByRole("button", { name: "INSTALL FUSES & RESTORE" }).click();
-  await expect(page.locator("#panel-feedback")).toContainText(
-    "Nothing was consumed",
-  );
-  await page.getByLabel("Circuit A route").selectOption("service");
-  await page.getByLabel("Circuit B route").selectOption("departure");
-  await page.getByRole("button", { name: "INSTALL FUSES & RESTORE" }).click();
+  await page
+    .getByRole("button", { name: "Select fuse A, amber", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: /^Ticket hall socket, empty/ })
+    .click();
+  await expect(page.locator("#panel-feedback")).toContainText("Spark");
+  expect((await snapshot(page)).progress.fuses).toEqual(["amber", "blue"]);
+  await seatFusesAndPower(page);
 }
 async function accessControl(page: Page) {
   for (const clue of ["shift", "recording", "locker"]) await read(page, clue);
@@ -428,9 +449,7 @@ test("the entire authored route is traversable without teleporting", async ({
   await page.getByRole("button", { name: "PUT AWAY" }).click();
   await walk(12.6, 2.4);
   await inspect("cabinet");
-  await page.getByLabel("Circuit A route").selectOption("service");
-  await page.getByLabel("Circuit B route").selectOption("departure");
-  await page.getByRole("button", { name: "INSTALL FUSES & RESTORE" }).click();
+  await seatFusesAndPower(page);
   await walk(11, -3.5);
   await walk(11, -9);
   await walk(12, -9.8);
@@ -710,9 +729,7 @@ test("optional hints reveal solutions explicitly, pause pursuit and reset when t
   await page.keyboard.press("Escape");
   await target(page, "blue");
   await target(page, "cabinet");
-  await page.getByLabel("Circuit A route").selectOption("service");
-  await page.getByLabel("Circuit B route").selectOption("departure");
-  await page.getByRole("button", { name: "INSTALL FUSES & RESTORE" }).click();
+  await seatFusesAndPower(page);
   await page.keyboard.press("KeyH");
   await expect(
     page.getByRole("dialog", { name: "Reconstruct staff access" }),
@@ -893,4 +910,208 @@ test("a failed prop download can recover and packaged materials finish before pl
   await expect(
     page.getByRole("heading", { name: "Emergency power" }),
   ).toBeVisible();
+});
+
+test("cartridges seat by keyboard and drag, wrong holders spark safely, and the breaker preserves paused audio and progress", async ({
+  page,
+}) => {
+  test.setTimeout(120000);
+  await page.addInitScript(() => {
+    (window as any).__panelContexts = [];
+    const Context = window.AudioContext;
+    window.AudioContext = class extends Context {
+      constructor(...args: ConstructorParameters<typeof AudioContext>) {
+        super(...args);
+        (window as any).__panelContexts.push(this);
+      }
+    };
+  });
+  await start(page);
+  await target(page, "cabinet");
+  const selectA = () =>
+    page.getByRole("button", { name: "Select fuse A, amber", exact: true });
+  const selectB = () =>
+    page.getByRole("button", { name: "Select fuse B, blue", exact: true });
+  const socket = (name: string) =>
+    page.getByRole("button", { name: new RegExp(`^${name} socket,`) });
+  const breaker = () =>
+    page.getByRole("button", { name: "Throw main breaker", exact: true });
+  await expect(selectA()).toBeDisabled();
+  await expect(selectB()).toBeDisabled();
+  await expect(breaker()).toBeDisabled();
+  await socket("Service").click();
+  await expect(page.locator("#panel-feedback")).toContainText(
+    "Select a recovered fuse",
+  );
+  await page
+    .getByRole("button", { name: "CLOSE CABINET", exact: true })
+    .click();
+  await target(page, "amber");
+  await target(page, "blue");
+  await target(page, "cabinet");
+  const stationTime = await page.evaluate(
+    () => (window as any).__panelContexts[0].currentTime,
+  );
+  await selectB().focus();
+  await page.keyboard.press("Enter");
+  await expect(selectB()).toHaveAttribute("aria-pressed", "true");
+  await socket("Service").focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#panel-feedback")).toContainText(
+    "Spark — fuse B rejected by Service",
+  );
+  await expect(page.locator(".spark-burst")).toBeVisible();
+  await expect(page.locator(".spark-burst")).toHaveCSS(
+    "animation-name",
+    "none",
+  );
+  await expect(page.locator(".rejected-fuse")).toBeHidden();
+  await expect(selectB()).toBeEnabled();
+  await expect(breaker()).toBeDisabled();
+  expect((await snapshot(page)).progress.powered).toBe(false);
+  expect((await snapshot(page)).progress.fuses).toEqual(["amber", "blue"]);
+  await expectFrozen(page);
+  await expect
+    .poll(() => page.evaluate(() => (window as any).__panelContexts[1]?.state))
+    .toBe("suspended");
+  expect(
+    await page.evaluate(() => (window as any).__panelContexts[0].currentTime),
+  ).toBe(stationTime);
+  await page.screenshot({ path: "test-results/phase4b-panel-rejected.png" });
+  await selectA().dragTo(socket("Service"));
+  await expect(socket("Service")).toHaveAccessibleName(/fuse A seated/);
+  await expect(selectA()).toBeDisabled();
+  await expect(
+    page.locator(".socket-inserted .fuse-socket > .fuse-visual"),
+  ).toHaveCSS("animation-name", "none");
+  await page
+    .getByRole("button", { name: "CLOSE CABINET", exact: true })
+    .click();
+  await target(page, "cabinet");
+  await expect(socket("Service")).toHaveAccessibleName(/fuse A seated/);
+  await socket("Service").focus();
+  await page.keyboard.press("Enter");
+  await expect(selectA()).toBeEnabled();
+  await expect(selectA()).toHaveAttribute("aria-pressed", "true");
+  await socket("Service").focus();
+  await page.keyboard.press("Enter");
+  await selectB().dragTo(socket("Departure"));
+  await expect(breaker()).toBeEnabled();
+  expect((await snapshot(page)).progress.powered).toBe(false);
+  await breaker().focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#panel-feedback")).toContainText(
+    "Breaker latched",
+  );
+  await expect(
+    page.getByRole("button", { name: "CLOSE CABINET", exact: true }),
+  ).toBeFocused();
+  await expectFrozen(page);
+  expect((await snapshot(page)).enemy.grace).toBe(12);
+  await expect(socket("Service")).toBeDisabled();
+  await expect(socket("Departure")).toBeDisabled();
+  await page.screenshot({ path: "test-results/phase4b-panel-powered.png" });
+  await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as any).__panelContexts.every(
+          (context: AudioContext) => context.state === "suspended",
+        ),
+      ),
+    )
+    .toBe(true);
+  await page
+    .getByRole("button", { name: "CLOSE CABINET", exact: true })
+    .click();
+  await expect(page.locator("#subtitle")).toContainText(
+    "Service access restored",
+  );
+  await expect(page.locator("#threat-advice")).toContainText(
+    "find a corner and shelter",
+  );
+  await page.reload();
+  await page.getByRole("button", { name: "CONTINUE JOURNEY" }).click();
+  await target(page, "cabinet");
+  await expect(
+    page.getByRole("button", { name: "Main breaker on", exact: true }),
+  ).toBeDisabled();
+  await expect(socket("Service")).toHaveAccessibleName(/fuse A installed/);
+});
+
+test("unpowered reload returns seated cartridges to the tray and compact cabinet controls respect contrast motion and mute settings", async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  await start(page);
+  await target(page, "amber");
+  await target(page, "blue");
+  await target(page, "cabinet");
+  await page
+    .getByRole("button", { name: "Select fuse A, amber", exact: true })
+    .click();
+  await page.getByRole("button", { name: /^Service socket, empty/ }).click();
+  await page.reload();
+  await page.getByRole("button", { name: "CONTINUE JOURNEY" }).click();
+  await target(page, "cabinet");
+  await expect(
+    page.getByRole("button", { name: "Select fuse A, amber", exact: true }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: /^Service socket, empty/ }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "CLOSE CABINET", exact: true })
+    .click();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "SETTINGS", exact: true }).click();
+  await page.getByLabel("Text size", { exact: true }).selectOption("large");
+  await page.getByLabel("High contrast interface").check();
+  await page.getByLabel("Reduced camera motion").uncheck();
+  await page.getByLabel("Reduced flicker").uncheck();
+  await page.getByLabel("Master volume", { exact: true }).fill("0");
+  await page.getByRole("button", { name: "DONE", exact: true }).click();
+  await page.getByRole("button", { name: "RESUME JOURNEY" }).click();
+  await page.setViewportSize({ width: 900, height: 600 });
+  await target(page, "cabinet");
+  await page
+    .getByRole("button", { name: "Select fuse A, amber", exact: true })
+    .click();
+  await page.getByRole("button", { name: /^Departure socket, empty/ }).click();
+  await expect(page.locator(".spark-burst")).toHaveCSS(
+    "animation-name",
+    "spark-fade",
+  );
+  await expect(page.locator(".rejected-fuse")).toHaveCSS(
+    "animation-name",
+    "fuse-eject",
+  );
+  expect(
+    await page
+      .locator(".cabinet")
+      .evaluate((el) => el.scrollWidth > el.clientWidth),
+  ).toBe(false);
+  await expect(page.locator("#panel-feedback")).toHaveCSS("font-size", "17px");
+  await page.locator(".cabinet-plate").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: "test-results/phase4b-panel-compact.png" });
+  await page
+    .getByRole("button", { name: "Select fuse A, amber", exact: true })
+    .click();
+  await page.getByRole("button", { name: /^Service socket, empty/ }).click();
+  await page
+    .getByRole("button", { name: "Select fuse B, blue", exact: true })
+    .click();
+  await page.getByRole("button", { name: /^Departure socket, empty/ }).click();
+  await expect(
+    page.getByRole("button", { name: "Throw main breaker", exact: true }),
+  ).toBeEnabled();
+  await page
+    .getByRole("button", { name: "Close cabinet", exact: true })
+    .focus();
+  await page.keyboard.press("Shift+Tab");
+  await expect(
+    page.getByRole("button", { name: "CLOSE CABINET", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Escape");
+  expect((await snapshot(page)).active).toBe(true);
 });

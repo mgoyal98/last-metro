@@ -10,7 +10,8 @@ Pure game-state transitions are independent of the renderer and testable without
 
 - `game/state.ts`: authoritative puzzle progression, orientation/countdown updates, safe checkpoint recovery, validation, v1-to-v2 migration and persistence.
 - `game/hints.ts`: read-only three-step guidance for the current puzzle; solutions use shared puzzle constants.
-- `game/puzzles.ts`: stable clue IDs, code components, service definitions, departure sequence and timing constants.
+- `game/puzzles.ts`: stable clue IDs, fuse specifications/socket definitions, code components, service definitions, departure sequence and timing constants.
+- `game/fusePanel.ts`: pure transient seating/selection rules, rejection/removal outcomes and breaker readiness.
 - `game/physics.ts`: Rapier setup, kinematic movement and a collider box registry with revisions.
 - `game/navigation.ts`: grid routing, footprint clearance and segment/box sight queries against that registry.
 - `game/Enemy.ts`: six-state threat, hearing, awareness, hiding compromise and capture; no renderer dependencies.
@@ -20,10 +21,12 @@ Pure game-state transitions are independent of the renderer and testable without
 - `world/assets.ts`: same-origin texture/GLB loading, physical repeat scale and PBR colour-space conventions.
 - `world/Shadow.ts`: original capsule/primitive rig; actual enemy displacement drives limbs and a soft contact shadow.
 - `audio/`: HRTF positional effects, listener movement, wall muffling, master/effects/voice buses and pauseable local voice buffers; no runtime speech service.
+- `audio/PanelAudio.ts`: short user-triggered panel feedback in an independent context, stopped on close/focus loss; station audio remains suspended.
 - `audio/voices.ts`: canonical original PA scripts, subtitles, file names and generous subtitle durations.
 - `public/audio/` and `scripts/generate-google-voices.mjs`: committed mono PCM assets and optional Google authoring; credentials are read only by the local Node script.
 - `public/models/`, `public/textures/`, `assets/source/`: shipped render assets, editable Blender sources and exact provenance; `scripts/build-props.py` and `scripts/import-polyhaven.py` reproduce the visuals.
 - `ui/`: escaped/text-safe UI state, settings and menus; no framework needed for POC.
+- `ui/FusePanel.ts`: original cabinet/tray/holder markup and semantic feedback; click, keyboard and drag actions enter the same game-side reducer.
 - `ui/notes.ts`: authored, retained evidence and replayable recording transcripts. Evidence recordings remain readable transcripts; story PA announcements have bundled synthetic voices.
 
 ## Decisions
@@ -86,3 +89,15 @@ Poly Haven colour maps use sRGB; OpenGL normal and roughness maps use linear dat
 Blender props share loaded geometry/materials across cloned instances. Benches retain existing collider dimensions. The cabinet and kiosk have detached solid proxy meshes that stay `visible=true` with frozen world matrices for occlusion queries, while only their GLB render meshes enter the scene. Kiosk collision joins the same registry used by Rapier and enemy navigation. Mandatory target signs and changing indicators remain independent.
 
 Google authoring runs only through the Node script, using the ignored `.env.voices` file. Four normalized WAVs ship under `public/audio`, with complete request/output provenance outside the runtime. The local Whisper check is optional authoring tooling; neither its environment nor model weights enter the build. Save formats, transcripts, subtitle windows, voice gain and puzzle rules are unchanged.
+
+## Phase 4B cabinet interaction contract
+
+The former route selects are replaced by three holders and a main breaker. `Game` owns a transient `FusePanelState`; `placeFuse` enforces ownership, uniqueness, holder compatibility, occupied-slot rejection and safe removal without changing saved inventory. Only a ready panel can dispatch the existing pure `power` action. The shared fuse specifications define both placement and the final power transition. A/B identity appears in labels as well as colour.
+
+Unpowered seating survives cabinet close/reopen in the current attempt. `begin` resets it on a new journey, reload or checkpoint restore. Powered saves reconstruct A/Service and B/Departure as locked seats; unpowered saves return all recovered fuses to the tray. No v2 schema change or migration is required.
+
+Cabinet actions leave the enemy, countdown and station AudioContext suspended. The main breaker commits power and activates the 12-second grace while the panel remains open; active time still cannot advance. The PA power announcement and machinery cue are deferred until the player resumes. A reset cancels the pending announcement. The short panel-feedback context is independent, uses master × effects volume and cancels active/pending cues on screen changes, blur, visibility loss and page exit.
+
+Native drag/drop carries only an A/B identifier. Game-side guards validate the current screen, owned fuse and socket before invoking the same reducer used by keyboard/click controls. UI refresh retains the feedback live region and restores focus to the equivalent control; energising moves focus to Close cabinet. Reduced motion removes insertion/ejection movement; reduced flicker replaces the fading spark burst with a static indicator. Every rejection remains visible as text with the original fuse in the tray.
+
+World cartridges remain target meshes at the original clue locations, outside static scenery batches. Hiding their parent mesh removes the full assembled pickup after collection. They reuse the generous aiming/occlusion checks; smaller rendered size does not require hitting individual triangles. Enemy rules are unchanged; the HUD now explains the next defensive action for seen, hidden, exposed and grace states.

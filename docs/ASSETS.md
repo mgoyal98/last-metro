@@ -1,6 +1,6 @@
 # Asset register
 
-Current asset pass: **v0.4.1 POC, 2026-09-06**. The game packages Poly Haven surfaces, original Blender props and Google-generated PA speech locally. No runtime asset API, speech service, key or backend is required. Earlier procedural/eSpeak versions remain in Git at `v0.4.0-beta`.
+Current build: **v0.4.2 POC, 2026-09-06**. The game packages Poly Haven surfaces, original Blender props and Google-generated PA speech locally. No runtime asset API, speech service, key or backend is required. Earlier procedural/eSpeak versions remain in Git at `v0.4.0-beta`.
 
 ## Environment and props
 
@@ -38,3 +38,12 @@ Unprompted local `faster-whisper` recognition matches every script word, ignorin
 Google's [Gemini API terms](https://ai.google.dev/gemini-api/terms) govern generated output; Google does not claim ownership of it. These files are not labelled CC0. Free-tier billing/quota and future model availability must be checked before regeneration. Neither the authoring service, speech recognizer nor FFmpeg is distributed with the runtime. See [voice authoring](VOICE-AUTHORING.md) for setup, local verification and the historical eSpeak fallback.
 
 No source-code licence grant has been chosen for this private POC. Record source, licence, attribution, redistribution terms, subtitles and triggers before future imports.
+
+## Phase 4B original fuse and panel assets
+
+- `src/world/Fuse.ts`: original small cartridge geometry with a transparent glass tube, two metal ferrules, a coiled fuse element and restrained amber/blue identification bands. Each pickup is approximately 11.3 cm long and 2.6 cm wide, down from the old 50 × 28 × 16 cm glowing box. These dimensions preserve close-range readability; the old emissive material and oversized bench support are removed. Geometry is generated in code and adds no external model download.
+- Construction reference only: the [Littelfuse 313/315 datasheet](https://www.littelfuse.com/assetdocs/littelfuse-fuse-313-315-datasheet?assetguid=82476e74-6b5c-4262-88c8-0e436eab1447) identifies glass bodies and metal end caps for cartridge fuses. No manufacturer image, logo, part number or CAD asset is copied. The station markings and 16 A / 25 A puzzle identities are original fictional game content.
+- `src/ui/FusePanel.ts` and `src/styles/fuse-panel.css`: original DOM/CSS cartridge illustrations, holders, brass contacts, busbar, main breaker and vector spark strokes. No raster generation or external artwork is used. The same cartridge illustration appears in the tray, a seated holder and the rejection effect.
+- `src/audio/PanelAudio.ts`: original deterministic short noise/tone synthesis for seating, removal, rejection and breaker feedback. Buffers are bounded to 0.1–0.24 seconds and follow master/effects volume. A separate context preserves paused station speech/ambience and is suspended after playback or cancellation.
+
+Google recordings, Poly Haven maps and Blender models are unchanged in this milestone. The spark/ejection and breaker sequence are fictional puzzle feedback; recorded provenance does not present them as an electrical simulation.

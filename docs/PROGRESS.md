@@ -62,6 +62,10 @@ Play the built preview at [127.0.0.1:4173](http://127.0.0.1:4173/?v=0.4.1) while
 - Release marker: `v0.4.1-poc`. Preview remains on port 4173; development on 5173. Use `?v=0.4.1` to refresh. Save formats remain compatible; each browser/origin keeps its own save.
 - Full environment, result details, prior milestone evidence and remaining limits: [QA](QA.md).
 
+## Active follow-up — Phase 4B
+
+The user requested recognizable cartridge fuses, tactile socket installation with sparks for wrong placements, and clearer enemy-defense guidance before release validation. Scope and acceptance gates are in [MILESTONE-04B.md](MILESTONE-04B.md). Cartridge pickups, the three-holder cabinet, breaker, recoverable sparks and defense guidance are implemented. All 23 browser cases pass together, alongside 56 unit tests, types, formatting and build. Built-preview smoke and final visual review are in progress. v0.4.1-poc remains the last completed milestone.
+
 ## Next — Phase 5
 
 1. Validate native Safari and Chromium on a named reference Mac; record GPU, viewport, quality preset, cold-load time and frame-time percentiles on the physical route.

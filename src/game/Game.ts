@@ -7,6 +7,7 @@ import {
   WebGLRenderer,
 } from "three";
 import { StationAudio } from "../audio/Audio";
+import { PanelAudio } from "../audio/PanelAudio";
 import { Station } from "../world/Station";
 import type { Target, TargetId } from "../world/Station";
 import { UI } from "../ui/UI";
@@ -24,8 +25,11 @@ import {
   saveProgress,
   transition,
 } from "./state";
-import { isNoteId } from "./puzzles";
+import { isNoteId, FUSE_SPECS, FUSE_SOCKETS } from "./puzzles";
 import type { Action, Progress } from "./state";
+import type { Fuse, Route } from "./state";
+import { freshFusePanel, panelReady, placeFuse } from "./fusePanel";
+import type { FusePanelAction } from "./fusePanel";
 import { Enemy } from "./Enemy";
 import { distance, Navigation } from "./navigation";
 import type { Point } from "./navigation";
@@ -41,6 +45,9 @@ export class Game {
     90,
   );
   private readonly audio = new StationAudio();
+  private readonly panelAudio = new PanelAudio();
+  private fusePanel = freshFusePanel();
+  private pendingPowerCue = false;
   private readonly ui: UI;
   private readonly station: Station;
   private readonly player: Player;
@@ -184,6 +191,7 @@ export class Game {
       if (document.hidden) this.pause();
     });
     window.addEventListener("pagehide", () => {
+      this.panelAudio.stop();
       if (this.started) this.persist();
     });
     document.addEventListener("pointerlockchange", () => {
@@ -248,6 +256,10 @@ export class Game {
   }
 
   private action(action: string): void {
+    if (action.startsWith("fuse-")) {
+      this.handleFuseAction(action);
+      return;
+    }
     if (action.startsWith("note:")) {
       this.show("note", action.slice(5));
       return;
@@ -351,29 +363,25 @@ export class Game {
         this.show("title");
         break;
       case "power": {
-        if (this.state.fuses.length < 2) {
+        if (this.ui.screen !== "cabinet" || this.state.powered) return;
+        if (!panelReady(this.fusePanel, this.state)) {
           this.ui.feedback(
-            "Both fuses are needed. Check the platform bench and the ticket hall workbench.",
+            "Seat both required fuses before throwing the main breaker.",
           );
           return;
         }
-        const routes = this.ui.routes();
-        const result = transition(this.state, { type: "power", ...routes });
-        if (!result.powered) {
-          this.audio.cue("door");
-          this.ui.feedback(
-            "Circuit overload. Nothing was consumed. Check the engineer’s diagram in your journal.",
-          );
-          return;
-        }
-        this.commit({ type: "power", ...routes });
-        this.resume();
-        this.audio.cue("power");
-        this.caption("[ Machinery starts in the service corridor ]");
+        this.commit({
+          type: "power",
+          a: FUSE_SPECS.amber.circuit,
+          b: FUSE_SPECS.blue.circuit,
+        });
+        this.fusePanel = freshFusePanel(this.state.powered);
         this.enemy.activate();
-        this.voice("power");
-        this.ui.toast(
-          "Something heard the power. Break sight, then E inside a shelter. Q throws a token; sprinting is loud.",
+        this.pendingPowerCue = true;
+        this.ui.refreshCabinet(this.fusePanel, this.state);
+        void this.panelAudio.play(
+          "breaker",
+          this.settings.volume * this.settings.effectsVolume,
         );
         break;
       }
@@ -386,6 +394,8 @@ export class Game {
       : state.remainingSeconds <= 0
         ? recoverProgress(state)
         : state;
+    this.fusePanel = freshFusePanel(this.state.powered);
+    this.pendingPowerCue = false;
     this.station.apply(this.state);
     this.player.reset(...checkpointSpawn(this.state));
     this.enemy.reset(this.state.powered);
@@ -426,6 +436,7 @@ export class Game {
     this.caption("[ Fluorescent hum. A train idles in the dark. ]");
   }
   private show(screen: Screen, note?: string): void {
+    this.panelAudio.stop();
     if (this.active && this.started && screen !== "playing") this.persist();
     this.active = screen === "playing";
     if (!this.active) {
@@ -440,6 +451,7 @@ export class Game {
       this.settings,
       !!this.saved && !this.saved.completed,
       note,
+      this.fusePanel,
     );
   }
   private resume(): void {
@@ -455,6 +467,15 @@ export class Game {
     if (this.subtitleRemaining > 0) this.ui.announce(this.announcement);
     this.accumulator = 0;
     void this.audio.start();
+    if (this.pendingPowerCue) {
+      this.pendingPowerCue = false;
+      this.audio.cue("power");
+      this.voice("power");
+      this.caption("[ Machinery starts in the service corridor ]");
+      this.ui.toast(
+        "Power woke the shadow. You have 12 seconds: find a solid corner, then E inside a marked shelter. Q distracts after breaking sight.",
+      );
+    }
     try {
       const request = this.renderer.domElement.requestPointerLock?.();
       request?.catch(() =>
@@ -465,7 +486,48 @@ export class Game {
     }
   }
   private pause(): void {
+    this.panelAudio.stop();
     if (this.active) this.show("pause");
+  }
+  private handleFuseAction(action: string): void {
+    if (this.ui.screen !== "cabinet" || this.state.powered) return;
+    const [operation, first, second] = action.split(":");
+    const isFuse = (id: string): id is Fuse => Object.hasOwn(FUSE_SPECS, id);
+    const isSocket = (id: string): id is Route =>
+      FUSE_SOCKETS.some((socket) => socket.id === id);
+    let placement: FusePanelAction | undefined;
+    if (operation === "fuse-select" && isFuse(first))
+      placement = { type: "select", fuse: first };
+    if (operation === "fuse-remove" && isSocket(first))
+      placement = { type: "remove", socket: first };
+    if (
+      operation === "fuse-place" &&
+      isSocket(first) &&
+      this.fusePanel.selected
+    )
+      placement = {
+        type: "insert",
+        socket: first,
+        fuse: this.fusePanel.selected,
+      };
+    if (operation === "fuse-drop" && isFuse(first) && isSocket(second))
+      placement = { type: "insert", fuse: first, socket: second };
+    if (!placement) {
+      this.ui.feedback("Select a recovered fuse from the tray first.");
+      return;
+    }
+    const result = placeFuse(this.fusePanel, this.state, placement);
+    this.fusePanel = result.panel;
+    this.ui.refreshCabinet(this.fusePanel, this.state, result);
+    if (
+      result.kind === "seat" ||
+      result.kind === "reject" ||
+      result.kind === "remove"
+    )
+      void this.panelAudio.play(
+        result.kind,
+        this.settings.volume * this.settings.effectsVolume,
+      );
   }
   private persist(): void {
     this.persistentStorage = saveProgress(this.state);
@@ -771,6 +833,17 @@ export class Game {
               : "MOVE QUIETLY",
       this.tokens,
       this.enemy.state === "Chase" || this.enemy.compromised,
+      this.hidden
+        ? this.enemy.compromised
+          ? "Leave now. Shift to a solid corner."
+          : "Stay concealed until it passes."
+        : this.enemy.grace > 0
+          ? "Use this time to find a corner and shelter."
+          : this.enemy.seesPlayer
+            ? "Shift to a corner. Break sight, then shelter + E."
+            : this.enemy.state === "Chase" || this.enemy.state === "Search"
+              ? "Out of sight. Shelter + E, or Q to draw it away."
+              : "Break sight · E inside a shelter",
     );
   }
   private spatial(

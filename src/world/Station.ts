@@ -23,6 +23,7 @@ import { signTexture, surface, scaleSurfaceUV } from "./materials";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { Shadow } from "./Shadow";
 import type { StationAssets } from "./assets";
+import { cartridgeFuse } from "./Fuse";
 
 export type TargetId =
   | NoteId
@@ -357,36 +358,14 @@ export class Station {
       -Math.PI / 2,
     );
     this.target("map", "Read the night route map", map, [3.1, -5.5]);
-    const amber = this.box(
-      3.5,
-      0.85,
-      3.5,
-      0.28,
-      0.16,
-      0.5,
-      new MeshStandardMaterial({
-        color: "#edbb62",
-        emissive: "#d9a130",
-        emissiveIntensity: 0.65,
-      }),
-      false,
-    );
-    this.box(3.5, 0.765, 3.5, 0.5, 0.015, 0.75, this.dark, false);
+    const amber = cartridgeFuse("amber");
+    amber.position.set(3.5, 0.708, 3.5);
+    this.scene.add(amber);
+    this.box(3.5, 0.691, 3.5, 0.15, 0.006, 0.07, this.dark, false);
     this.target("amber", "Collect fuse A · amber", amber, [2.1, 3.5]);
-    const blue = this.box(
-      13.1,
-      1.06,
-      -5.45,
-      0.28,
-      0.16,
-      0.5,
-      new MeshStandardMaterial({
-        color: "#85d5e1",
-        emissive: "#309ab2",
-        emissiveIntensity: 0.75,
-      }),
-      false,
-    );
+    const blue = cartridgeFuse("blue");
+    blue.position.set(13.1, 0.955, -5.45);
+    this.scene.add(blue);
     this.target("blue", "Collect fuse B · blue", blue, [13.1, -3.8]);
     const shift = this.sign(
       ["NIGHT SHIFT RECORD", "R. SEN / STAFF ACCESS"],

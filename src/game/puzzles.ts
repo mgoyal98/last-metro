@@ -3,6 +3,30 @@ export const ORIENTATION_SECONDS = 30;
 export const SHIFT_NUMBER = "48";
 export const LOCKER_NUMBER = "17";
 export const ACCESS_CODE = SHIFT_NUMBER + LOCKER_NUMBER;
+export const FUSE_SPECS = {
+  amber: { mark: "A", label: "Amber", rating: "16 A", circuit: "service" },
+  blue: { mark: "B", label: "Blue", rating: "25 A", circuit: "departure" },
+} as const;
+export const FUSE_SOCKETS = [
+  {
+    id: "hall",
+    label: "Ticket hall",
+    detail: "Concourse lighting",
+    number: "01",
+  },
+  {
+    id: "service",
+    label: "Service",
+    detail: "Maintenance access",
+    number: "02",
+  },
+  {
+    id: "departure",
+    label: "Departure",
+    detail: "Signals & boarding",
+    number: "03",
+  },
+] as const;
 export const NOTE_IDS = [
   "diagram",
   "map",

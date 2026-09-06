@@ -1,5 +1,6 @@
 @import url("./ui.css");
 @import url("./accessibility.css");
+@import url("./fuse-panel.css");
 
 :root {
   font-family: Arial, Helvetica, sans-serif;

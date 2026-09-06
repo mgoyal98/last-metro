@@ -60,7 +60,7 @@ export function hintGuide(state: Progress): HintGuide {
       steps: [
         "Both fuses are recovered. Match their circuits to the engineer’s plan.",
         "The diagram is on the right platform wall near the starting area. Open the circuit cabinet on the ticket hall’s far wall.",
-        "Set A · amber to Service and B · blue to Departure, then install. Incorrect routes never consume the fuses.",
+        "Seat A · amber in the Service holder and B · blue in Departure. Leave Ticket hall empty, then throw the main breaker. Wrong holders eject the fuse back to the tray.",
       ],
     };
   const missing = [
