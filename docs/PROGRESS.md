@@ -4,13 +4,15 @@ Last updated: 2026-09-06
 
 ## Current milestone
 
-**Phase 4A complete locally — materials, props and voices POC, `v0.4.1-poc`.** Earlier milestones remain recoverable at `v0.4.0-beta`, `v0.3.0-alpha`, `v0.2.0-alpha` and `v0.1.0-poc`.
+**Phase 4B complete locally — tactile fuse puzzle POC, `v0.4.2-poc`.** Earlier milestones remain recoverable at `v0.4.1-poc`, `v0.4.0-beta`, `v0.3.0-alpha`, `v0.2.0-alpha` and `v0.1.0-poc`.
 
-Two Poly Haven materials, three original Blender props and four Google-generated announcements are packaged and verified. Editable sources, exact provenance and reproduction steps are retained in [the asset pass](ASSET-UPGRADE.md). This remains a POC for checking GPT-6 capabilities; human listening, native Safari, hardware profiling and first-time playtesting are release gates.
+Small glass/metal cartridge pickups replace the glowing bricks. The cabinet now supports selecting or dragging fuses into holders, recoverable sparks on wrong placements, removal/refitting and a main breaker. Help and contextual HUD guidance explain existing stealth defenses. Scope and exit gates: [tactile fuse milestone](MILESTONE-04B.md).
+
+Two Poly Haven materials, three original Blender props and four Google-generated announcements remain packaged. Editable sources, exact provenance and reproduction steps are retained in [the asset pass](ASSET-UPGRADE.md). This remains a POC for checking GPT-6 capabilities; human listening, native Safari, hardware profiling and first-time playtesting are release gates.
 
 Completed beta scope and exit gates: `docs/MILESTONE-04.md`. Optional staged hints, larger readable clues, materials, animation, loading and static rendering efficiency are implemented on the complete escape loop.
 
-Play the built preview at [127.0.0.1:4173](http://127.0.0.1:4173/?v=0.4.1) while the preview server is running. To restart it: `npm run build && npm run preview -- --port 4173 --strictPort`. See `README.md` for controls.
+Play the built preview at [127.0.0.1:4173](http://127.0.0.1:4173/?v=0.4.2) while the preview server is running. To restart it: `npm run build && npm run preview -- --port 4173 --strictPort`. See `README.md` for controls. Choose **New Journey** to try fuse installation if the current save already has power restored.
 
 ## Completed
 
@@ -52,19 +54,21 @@ Play the built preview at [127.0.0.1:4173](http://127.0.0.1:4173/?v=0.4.1) while
 - Generated four Google Gemini/Charon PA recordings with the configured local key. Kept complete request/output provenance, subtitle windows and the existing PA mix; local unprompted recognition matches all words.
 - Added required-asset startup loading/recovery, verified kiosk collision and retained cabinet/bench gameplay geometry. No runtime external service or credential is shipped.
 
+- Replaced oversized emissive pickups with original 11.3 cm glass cartridge fuses, metal caps and visible elements, keeping the clue locations and accessible interaction aim.
+- Replaced cabinet dropdowns with three holders, a recoverable inventory tray, visible insertion/rejection and a breaker. Click, drag/drop and keyboard paths share pure placement rules; failed attempts preserve inventory.
+- Added short cabinet clicks/crackles with isolated audio lifecycle, volume controls and cancellation. Station audio, the enemy and time remain paused; motion/flicker preferences apply to feedback.
+- Preserved v2 saves: powered loads reconstruct locked holders; unpowered reloads return collected fuses to the tray. Partial placement survives closing/reopening during a run.
+- Added explicit sight-breaking, shelter, distraction and recovery guidance to help and the contextual threat HUD.
+
 ## Validation and handoff
 
-- Strict TypeScript, formatting, all 49 unit tests and the production build pass. Final browser test-only wait changes also pass types/formatting.
-- All 21 unique browser cases pass across full/focused runs: 20 passed in the 7.5-minute complete run, and the storage-blocked checkpoint/subtitle case passed after replacing its wall-clock deadline with a simulation-time wait. Both endings, continuous physical traversal, all shelters, capture and prop-download recovery are covered.
+- Strict TypeScript, formatting, all 56 unit tests and the production build pass.
+- All 23 browser cases pass in one complete run (8.8 minutes), including both endings, continuous physical traversal, all shelters, capture, prop-download recovery and the new cabinet input/audio/reload/accessibility cases. Runtime source stayed fixed throughout the run.
 - Built-preview smoke passes: no development bridge, all four Google WAVs decode with mono channels and valid subtitle durations, audio suspends/resumes, v2 Control recovery and physical dispatch persist; no JS/HTTP errors.
-- Chromium environment: Chrome 152.0.7977.76 on macOS 26.4.1, Playwright / SwiftShader. Fixed-view cost: 73 draw calls / 8,004 triangles versus 71 / 4,116 before the asset pass; low renders at 0.75 scale. Evidence is in `docs/rendering-phase4a.json`; no hardware FPS claim.
-- Station high/low, bench, cabinet, kiosk, title/dispatch and compact readable interface screenshots reviewed and archived under `docs/media`. Sources/hashes and exact Google transcripts verified. A scan confirms the actual key is absent from tracked/candidate files and `dist`.
-- Release marker: `v0.4.1-poc`. Preview remains on port 4173; development on 5173. Use `?v=0.4.1` to refresh. Save formats remain compatible; each browser/origin keeps its own save.
+- Chromium environment: Chrome 152.0.7977.76 on macOS 26.4.1, Playwright / SwiftShader. Current fixed-view evidence is in `docs/rendering-phase4b.json`; this is not a hardware FPS benchmark.
+- Pickup, cabinet, compact readable interface, pursuit/help and built title/dispatch evidence is archived under `docs/media`. The prior asset-source, transcript and credential verification remains recorded in `docs/QA-PHASE4A.md`; this turn adds no credentials or speech-generation requests.
+- Release marker: `v0.4.2-poc`. Preview remains on port 4173; development on 5173. Use `?v=0.4.2` to refresh. Save formats remain compatible; each browser/origin keeps its own save.
 - Full environment, result details, prior milestone evidence and remaining limits: [QA](QA.md).
-
-## Active follow-up — Phase 4B
-
-The user requested recognizable cartridge fuses, tactile socket installation with sparks for wrong placements, and clearer enemy-defense guidance before release validation. Scope and acceptance gates are in [MILESTONE-04B.md](MILESTONE-04B.md). Cartridge pickups, the three-holder cabinet, breaker, recoverable sparks and defense guidance are implemented. All 23 browser cases pass together, alongside 56 unit tests, types, formatting and build. Built-preview smoke and final visual review are in progress. v0.4.1-poc remains the last completed milestone.
 
 ## Next — Phase 5
 
@@ -104,3 +108,6 @@ The user requested recognizable cartridge fuses, tactile socket installation wit
 | 2026-09-06 | Asset integration | Two Poly Haven surfaces and three Blender props packaged with editable sources, exact provenance and collision-aware placement |
 | 2026-09-06 | Google voices | Four Charon recordings generated and normalized; unclear Bay B take replaced; all shipped words match local recognition and durations fit subtitles |
 | 2026-09-06 | Asset POC validation | 49 unit tests, all 21 unique browser cases across full/focused runs, built-preview smoke, source/credential checks and final visual/high-low review pass; tagged v0.4.1-poc |
+| 2026-09-06 | Phase 4B scope | User-requested fuse shape, hands-on cabinet, recoverable sparks and existing defense guidance defined before phase 5 |
+| 2026-09-06 | Tactile fuse implementation | Cartridge geometry, pure seating rules, accessible tray/holders/breaker, isolated panel audio and contextual stealth help implemented with v2 compatibility |
+| 2026-09-06 | Fuse POC validation | 56 unit tests, all 23 browser cases in one run, types, formatting, build and built-preview smoke pass; visual evidence and handoff recorded for v0.4.2-poc |

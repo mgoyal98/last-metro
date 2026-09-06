@@ -1,0 +1,37 @@
+{
+  "date": "2026-09-06",
+  "version": "0.4.2",
+  "browser": "Chrome 152.0.7977.76",
+  "renderer": "ANGLE / SwiftShader",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "devicePixelRatio": 1,
+  "view": "Fresh start x=1.5, z=15, yaw=0, pitch=0; high after one active second",
+  "prior": {
+    "version": "0.4.1",
+    "preset": "high",
+    "drawCalls": 73,
+    "triangles": 8004
+  },
+  "high": {
+    "drawCalls": 83,
+    "triangles": 9068,
+    "renderScale": 1
+  },
+  "cabinet": {
+    "empty": {
+      "height": 758,
+      "content": 760,
+      "width": 858,
+      "contentWidth": 858
+    },
+    "powered": {
+      "height": 758,
+      "content": 770
+    }
+  },
+  "browserErrors": [],
+  "limits": "Single fixed-view diagnostic. Software timing omitted; not a hardware FPS benchmark or cold-loading measurement. Low preset was unchanged and not re-profiled. Cabinet permits vertical scrolling; the standard view shows all controls and feedback."
+}

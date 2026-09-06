@@ -4,9 +4,9 @@
 
 A first-person atmospheric escape game set in a fictional Indian metro station. Built for desktop browsers with TypeScript, Three.js, Rapier, and Vite.
 
-**Current POC build: v0.4.1 / materials, props and voice milestone.** Restore power, reconstruct staff access, evade a listening shadow, and choose which train to board. Three puzzles, stealth and two endings are playable. This is not a production release. See [progress](docs/PROGRESS.md) for the verified state and [roadmap](docs/ROADMAP.md) for release gates.
+**Current POC build: v0.4.2 / tactile fuse puzzle milestone.** Restore power, reconstruct staff access, evade a listening shadow, and choose which train to board. Three puzzles, stealth and two endings are playable. This is not a production release. See [progress](docs/PROGRESS.md) for the verified state and [roadmap](docs/ROADMAP.md) for release gates.
 
-![Last Metro station with Poly Haven materials and Blender props](docs/media/phase4a-platform.png)
+![Last Metro interactive fuse cabinet](docs/media/phase4b-panel-empty.png)
 
 ## Development
 
@@ -26,7 +26,7 @@ npm run build
 npm run preview -- --port 4173 --strictPort
 ```
 
-Open [the local preview](http://127.0.0.1:4173). The server must be running. Checkpoints and settings are local to each browser and origin, so the dev server and built preview have separate saves.
+Open [the local preview](http://127.0.0.1:4173/?v=0.4.2). The server must be running. Checkpoints and settings are local to each browser and origin, so the dev server and built preview have separate saves.
 
 ## Controls
 
@@ -45,13 +45,17 @@ Open [the local preview](http://127.0.0.1:4173). The server must be running. Che
 
 Use **How to play** from the title or pause for movement, puzzles and stealth guidance. Press **H** for optional hints: direction first, locations next, then an explicitly requested solution. Hints pause the game and never consume items.
 
+At the power cabinet, **select a fuse and click a holder**, or **drag it into place**. Tab and Enter/Space provide the same controls. Wrong holders spark and eject the cartridge back to the tray; nothing is consumed. Click a seated fuse to remove it. Fit both required fuses, throw the main breaker, then close the cabinet. The engineer’s note and optional hints show the connections.
+
 Settings include large text, high contrast, optional automatic reminders, captions, independent audio volumes and reduced motion/flicker. The low preset reduces scene resolution and decorative lighting while keeping notes and menus crisp.
 
 Read the engineer’s note on the right platform wall first. Clues and recording transcripts stay in your journal. A spoiler walkthrough is in [QA](docs/QA.md) if you get stuck. Power wakes the shadow after a 12-second warning. Walking is quiet; crouching is quieter; sprinting attracts it. Walls block its sight. Break sight, step inside a marked shelter and press E to hide. It remembers seeing you enter. A token can redirect it after you break sight; there are three per attempt. The ventilation purge beside the service entrance runs for eight seconds and can be reused after a 24-second cooldown.
 
-The 18-minute departure window starts after 30 seconds of active orientation or your first collected item/note. Menus and focus loss pause time. Expiry or capture preserves completed puzzles and clues and restores a safe checkpoint with a fresh window. Recovery also resets the shadow, grants 12 seconds of safety and replenishes three tokens. Hiding keeps time running; menus pause the enemy and audio as well as the clock.
+The 18-minute departure window starts after 30 seconds of active orientation or your first collected item/note. Menus and focus loss pause time. Expiry or capture preserves completed puzzles and clues and restores a safe checkpoint with a fresh window. Recovery also resets the shadow, grants 12 seconds of safety and replenishes three tokens. Hiding keeps time running; menus pause the enemy, station audio and clock. Short user-triggered cabinet clicks/crackles play separately and stop on close or focus loss.
 
-Existing v2 saves remain compatible. POC saves migrate automatically: fuses, notes and restored power are retained, while the new access and departure puzzles start unsolved. The legacy save is kept intact; the game writes a separate version 2 save. Saves belong to the browser and origin used to play.
+The flashlight illuminates the station; it does not repel the enemy. The HUD gives contextual instructions when you are seen, concealed or in the recovery safety window.
+
+Existing v2 saves remain compatible. Unpowered fuse placement survives closing/reopening the cabinet during a run; reloading an unpowered save returns the recovered fuses to the tray. Powered saves reopen with both fuses installed. POC saves migrate automatically: fuses, notes and restored power are retained, while the new access and departure puzzles start unsolved. The legacy save is kept intact; the game writes a separate version 2 save. Saves belong to the browser and origin used to play.
 
 ## Validation
 

@@ -2,6 +2,8 @@
 
 User request, 2026-09-06: replace the oversized glowing fuse bricks with recognizable fuses, make installation a physical-looking interaction with spark/rejection feedback, and explain enemy protection before phase 5.
 
+**Completed locally: v0.4.2-poc.** All 56 unit tests, 23 browser cases in one complete run, types, formatting, build and built-preview smoke pass. Screenshots and remaining human/browser/performance release gates are recorded in [QA](QA.md).
+
 ## Scope
 
 - Small glass cartridge pickups with metal caps, visible fuse element and subtle A/B identification. Preserve clue locations and generous interaction aiming; remove emissive pickup glow and the oversized support plate.
