@@ -4,6 +4,7 @@ export interface Settings {
   volume: number;
   effectsVolume: number;
   voiceVolume: number;
+  musicVolume: number;
   reducedMotion: boolean;
   reducedFlicker: boolean;
   captions: boolean;
@@ -18,6 +19,7 @@ export const defaults: Settings = {
   volume: 0.45,
   effectsVolume: 0.8,
   voiceVolume: 1,
+  musicVolume: 0.65,
   reducedMotion: true,
   reducedFlicker: true,
   captions: true,
@@ -38,10 +40,14 @@ export function readSettings(): Settings {
       "volume",
       "effectsVolume",
       "voiceVolume",
+      "musicVolume",
     ] as const) {
       const value = parsed[key];
       const volume =
-        key === "volume" || key === "effectsVolume" || key === "voiceVolume";
+        key === "volume" ||
+        key === "effectsVolume" ||
+        key === "voiceVolume" ||
+        key === "musicVolume";
       if (typeof value === "number" && Number.isFinite(value))
         s[key] = Math.min(volume ? 1 : 1.8, Math.max(volume ? 0 : 0.4, value));
     }

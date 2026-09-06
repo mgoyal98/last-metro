@@ -47,6 +47,7 @@ it("old settings retain their values while new accessibility preferences get def
     textSize: "standard",
     highContrast: false,
     autoHints: true,
+    musicVolume: defaults.musicVolume,
   });
 });
 
@@ -60,6 +61,7 @@ it("invalid settings cannot introduce unsupported sizes, nonfinite gains or trut
         autoHints: "false",
         textSize: "huge",
         effectsVolume: null,
+        musicVolume: -8,
       }),
   });
   expect(readSettings()).toMatchObject({
@@ -69,6 +71,7 @@ it("invalid settings cannot introduce unsupported sizes, nonfinite gains or trut
     autoHints: true,
     textSize: "standard",
     effectsVolume: defaults.effectsVolume,
+    musicVolume: 0,
   });
 });
 
@@ -83,6 +86,7 @@ it("large text, contrast and reminder preferences survive save/load without chan
     textSize: "large" as const,
     highContrast: true,
     autoHints: false,
+    musicVolume: 0.35,
   };
   storeSettings(settings);
   expect(readSettings()).toEqual(settings);

@@ -70,6 +70,10 @@ Play the built preview at [127.0.0.1:4173](http://127.0.0.1:4173/?v=0.4.2) while
 - Release marker: `v0.4.2-poc`. Preview remains on port 4173; development on 5173. Use `?v=0.4.2` to refresh. Save formats remain compatible; each browser/origin keeps its own save.
 - Full environment, result details, prior milestone evidence and remaining limits: [QA](QA.md).
 
+## Active follow-up — Phase 4C
+
+The user requested richer player/enemy footsteps, horror ambience and suspense music that fades up near the enemy. Work is in progress on original layered sound synthesis, distance-driven music, independent music volume and pause/recovery verification. The last completed tag remains `v0.4.2-poc`.
+
 ## Next — Phase 5
 
 1. Validate native Safari and Chromium on a named reference Mac; record GPU, viewport, quality preset, cold-load time and frame-time percentiles on the physical route.

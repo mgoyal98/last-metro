@@ -16,7 +16,12 @@ async function start(page: Page) {
   await page.getByRole("button", { name: "ENTER THE STATION" }).click();
   await expect.poll(async () => (await snapshot(page)).active).toBe(true);
 }
-async function holdForSimulation(page: Page, key: string, seconds: number) {
+async function holdForSimulation(
+  page: Page,
+  key: string,
+  seconds: number,
+  timeout = 12000,
+) {
   const elapsed = (await snapshot(page)).elapsed;
   await page.keyboard.down(key);
   try {
@@ -24,7 +29,7 @@ async function holdForSimulation(page: Page, key: string, seconds: number) {
       ({ elapsed, seconds }) =>
         (window as any).__LAST_METRO__.snapshot().elapsed >= elapsed + seconds,
       { elapsed, seconds },
-      { timeout: 12000 },
+      { timeout },
     );
   } finally {
     await page.keyboard.up(key);
@@ -535,7 +540,164 @@ test("pursuit pauses and capture recovers puzzle progress with fresh safety and 
   expect(recovered.position.z).toBeLessThan(-19);
   expect(recovered.tokens).toBe(3);
   expect(recovered.enemy.grace).toBeGreaterThan(10);
+  expect(recovered.audio.intensity).toBe(0);
+  expect(recovered.audio.footsteps.enemy).toBe(0);
   await expect(page.locator("#threat-status")).toContainText("SAFE WINDOW");
+});
+
+test("footsteps follow real travel, change cadence with gait and stop against walls and in menus", async ({
+  page,
+}) => {
+  test.setTimeout(150000);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await start(page);
+  const settle = async () => {
+    const elapsed = (await snapshot(page)).elapsed;
+    await expect
+      .poll(async () => (await snapshot(page)).elapsed)
+      .toBeGreaterThan(elapsed + 0.05);
+  };
+  await holdForSimulation(page, "KeyW", 3, 30000);
+  const walk = (await snapshot(page)).audio.footsteps.player;
+  expect(walk).toBeGreaterThanOrEqual(3);
+  await page.evaluate(() => (window as any).__LAST_METRO__.place(1.5, 15));
+  await settle();
+  await page.keyboard.down("ShiftLeft");
+  await holdForSimulation(page, "KeyW", 3, 30000);
+  await page.keyboard.up("ShiftLeft");
+  const ran = (await snapshot(page)).audio.footsteps.player;
+  expect(ran - walk).toBeGreaterThan(walk);
+  await page.evaluate(() => (window as any).__LAST_METRO__.place(1.5, 15));
+  await settle();
+  await page.keyboard.press("KeyC");
+  await holdForSimulation(page, "KeyW", 3, 30000);
+  const crouched = (await snapshot(page)).audio.footsteps.player;
+  expect(crouched - ran).toBeGreaterThan(0);
+  expect(crouched - ran).toBeLessThan(walk);
+  await page.evaluate(() =>
+    (window as any).__LAST_METRO__.place(4.1, 10, -Math.PI / 2),
+  );
+  await holdForSimulation(page, "KeyW", 1.2);
+  const blocked = (await snapshot(page)).audio.footsteps.player;
+  await holdForSimulation(page, "KeyW", 1.2);
+  expect((await snapshot(page)).audio.footsteps.player).toBe(blocked);
+  await page.keyboard.press("Tab");
+  const paused = (await snapshot(page)).audio;
+  await page.waitForTimeout(300);
+  expect((await snapshot(page)).audio).toEqual(paused);
+  expect(errors).toEqual([]);
+});
+
+test("horror music produces audio, swells near moving enemies, fades away, pauses and mutes independently", async ({
+  page,
+}) => {
+  test.setTimeout(120000);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "last-metro.settings.v1",
+      JSON.stringify({
+        effectsVolume: 0,
+        voiceVolume: 0,
+        musicVolume: 0.8,
+        volume: 0.7,
+      }),
+    );
+    const Context = window.AudioContext;
+    window.AudioContext = class extends Context {
+      gains: GainNode[] = [];
+      constructor(...args: ConstructorParameters<typeof AudioContext>) {
+        super(...args);
+        (window as any).__musicContext = this;
+      }
+      createGain() {
+        const node = super.createGain();
+        this.gains.push(node);
+        return node;
+      }
+    };
+  });
+  await start(page);
+  await page.evaluate(() => {
+    const ctx = (window as any).__musicContext;
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 2048;
+    ctx.gains[0].connect(analyser);
+    (window as any).__musicLevel = () => {
+      const samples = new Float32Array(2048);
+      analyser.getFloatTimeDomainData(samples);
+      return Math.sqrt(
+        samples.reduce((sum, value) => sum + value * value, 0) / samples.length,
+      );
+    };
+  });
+  await expect
+    .poll(() => page.evaluate(() => (window as any).__musicLevel()))
+    .toBeGreaterThan(0.001);
+  expect((await snapshot(page)).audio.intensity).toBe(0);
+  await page.evaluate(() => {
+    const b = (window as any).__LAST_METRO__;
+    b.place(1.5, 15);
+    b.setEnemy(1.5, 8);
+  });
+  await expect
+    .poll(async () => (await snapshot(page)).audio.intensity, {
+      timeout: 15000,
+    })
+    .toBeGreaterThan(0.3);
+  expect((await snapshot(page)).audio.footsteps.enemy).toBeGreaterThan(0);
+  await page.keyboard.press("Tab");
+  await expect
+    .poll(() => page.evaluate(() => (window as any).__musicContext.state))
+    .toBe("suspended");
+  const paused = (await snapshot(page)).audio;
+  const pausedTime = await page.evaluate(
+    () => (window as any).__musicContext.currentTime,
+  );
+  await page.waitForTimeout(300);
+  expect((await snapshot(page)).audio).toEqual(paused);
+  expect(
+    await page.evaluate(() => (window as any).__musicContext.currentTime),
+  ).toBe(pausedTime);
+  await page.keyboard.press("Escape");
+  await page.evaluate(() => (window as any).__LAST_METRO__.setEnemy(1.5, -17));
+  const receding = (await snapshot(page)).audio.intensity;
+  expect(receding).toBeGreaterThan(0.1);
+  await expect
+    .poll(async () => (await snapshot(page)).audio.intensity, {
+      timeout: 20000,
+    })
+    .toBeLessThan(receding * 0.6);
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "SETTINGS", exact: true }).click();
+  const slider = page.getByLabel("Music and suspense volume", { exact: true });
+  await slider.focus();
+  await page.keyboard.press("Home");
+  await expect(slider).toHaveValue("0");
+  await page.screenshot({ path: "test-results/phase4c-settings.png" });
+  await page.getByRole("button", { name: "DONE", exact: true }).click();
+  await page
+    .getByRole("button", { name: "RESUME JOURNEY", exact: true })
+    .click();
+  await expect
+    .poll(() => page.evaluate(() => (window as any).__musicLevel()), {
+      timeout: 10000,
+    })
+    .toBeLessThan(0.000001);
+  expect((await snapshot(page)).settings.musicVolume).toBe(0);
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("last-metro.settings.v1")!).musicVolume,
+    ),
+  ).toBe(0);
+  await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+  await expect
+    .poll(() => page.evaluate(() => (window as any).__musicContext.state))
+    .toBe("suspended");
+  expect(errors).toEqual([]);
 });
 
 test("shelters conceal after broken sight, preserve active time and expose witnessed entry", async ({

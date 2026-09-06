@@ -9,6 +9,7 @@ export class Player {
   crouched = false;
   flashlight = true;
   steps = 0;
+  distanceMoved = 0;
   private readonly euler = new Euler(0, 0, 0, "YXZ");
   private readonly direction = new Vector3();
   constructor(
@@ -35,10 +36,12 @@ export class Player {
       .normalize()
       .applyAxisAngle(new Vector3(0, 1, 0), this.yaw)
       .multiplyScalar(speed);
+    const before = this.physics.position;
     this.physics.move(this.direction.x, this.direction.z, dt);
-    const moving = x !== 0 || z !== 0;
-    if (moving) this.steps += dt * speed;
     const p = this.physics.position;
+    this.distanceMoved = Math.hypot(p.x - before.x, p.z - before.z);
+    const moving = this.distanceMoved > 0.001;
+    if (moving) this.steps += this.distanceMoved;
     const bob = settings.reducedMotion
       ? 0
       : moving
@@ -54,6 +57,7 @@ export class Player {
     this.yaw = 0;
     this.pitch = 0;
     this.crouched = false;
+    this.steps = this.distanceMoved = 0;
     this.keys.clear();
     this.camera.position.set(x, 1.72, z);
     this.camera.rotation.set(0, 0, 0);

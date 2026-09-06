@@ -35,6 +35,7 @@ import { distance, Navigation } from "./navigation";
 import type { Point } from "./navigation";
 import { VOICES } from "../audio/voices";
 import { loadStationAssets } from "../world/assets";
+import { GAITS } from "../audio/soundDesign";
 
 export class Game {
   private readonly renderer: WebGLRenderer;
@@ -94,7 +95,8 @@ export class Game {
   private captionRemaining = 0;
   private captionPriority = 0;
   private persistentStorage = true;
-  private nextStep = 0;
+  private playerStep = 0;
+  private tensionWarned = false;
   private introPlayed = false;
   private nextHint = 75;
   private destroyed = false;
@@ -171,7 +173,11 @@ export class Game {
     );
     this.renderer.toneMappingExposure = this.settings.brightness * 1.15;
     this.audio.setVolume(this.settings.volume);
-    this.audio.setMix(this.settings.effectsVolume, this.settings.voiceVolume);
+    this.audio.setMix(
+      this.settings.effectsVolume,
+      this.settings.voiceVolume,
+      this.settings.musicVolume,
+    );
     this.ui.applySettings(this.settings);
     this.station.setQuality(this.settings.quality);
     if (!this.settings.captions) this.ui.caption("");
@@ -416,13 +422,14 @@ export class Game {
     this.station.changePoster(false);
     this.station.showToken(0, 0, 0, false);
     this.station.animateThreat(this.enemy);
-    this.audio.stopVoice();
+    this.audio.resetAttempt();
+    this.tensionWarned = false;
     this.elapsed = 0;
     this.subtitleRemaining = 0;
     this.captionRemaining = 0;
     this.introPlayed = this.state.powered;
     this.nextHint = 75;
-    this.nextStep = this.player.steps;
+    this.playerStep = 0;
     this.started = true;
     this.persist();
     this.resume();
@@ -703,8 +710,37 @@ export class Game {
       oldState = this.enemy.state;
     this.enemy.update(dt, this.observer());
     this.audio.listen(this.camera.position, this.player.yaw);
+    const tension = this.audio.update(dt, {
+      distance: distance(this.enemy.position, this.camera.position),
+      active: this.enemy.state !== "Dormant",
+      grace: this.enemy.grace,
+      chasing: this.enemy.state === "Chase",
+      occluded: !this.enemy.navigation.sight(
+        this.enemy.position,
+        this.camera.position,
+      ),
+      concealed: this.hidden && !this.enemy.compromised,
+    });
+    if (tension > 0.35 && !this.tensionWarned) {
+      this.tensionWarned = true;
+      this.caption(
+        "[ A low pulse quickens. Dissonant strings swell nearby. ]",
+        1,
+      );
+    } else if (tension < 0.18) this.tensionWarned = false;
     this.noiseClock -= dt;
     if (moving) {
+      const gait = this.player.crouched
+        ? "crouch"
+        : this.player.keys.has("ShiftLeft") ||
+            this.player.keys.has("ShiftRight")
+          ? "run"
+          : "walk";
+      this.playerStep += this.player.distanceMoved;
+      if (this.playerStep >= GAITS[gait].stride) {
+        this.playerStep %= GAITS[gait].stride;
+        this.audio.step("player", gait);
+      }
       this.lastMoved = this.elapsed;
       if (this.noiseClock <= 0) {
         this.noiseClock = 0.45;
@@ -716,7 +752,7 @@ export class Game {
           radius: this.player.crouched ? 1.5 : running ? 17 : 4,
         });
       }
-    }
+    } else this.playerStep = 0;
     if (this.flight) {
       this.flight.age += dt;
       const t = Math.min(1, this.flight.age / 0.65),
@@ -742,8 +778,8 @@ export class Game {
       this.spatial("machine", source);
     }
     this.enemyStep += distance(previous, this.enemy.position);
-    if (this.enemyStep > 1.3) {
-      this.enemyStep = 0;
+    if (this.enemyStep > 1.2) {
+      this.enemyStep %= 1.2;
       this.spatial("enemy", this.enemy.position);
       if (distance(this.enemy.position, this.camera.position) < 10) {
         const angle =
@@ -850,6 +886,20 @@ export class Game {
     kind: "enemy" | "token" | "machine" | "warning",
     source: Point,
   ): void {
+    if (kind === "enemy") {
+      this.audio.step(
+        "enemy",
+        "walk",
+        source,
+        !this.enemy.navigation.sight(
+          source,
+          this.camera.position,
+          1.2,
+          this.camera.position.y,
+        ),
+      );
+      return;
+    }
     this.audio.spatial(
       kind,
       source,
@@ -909,10 +959,6 @@ export class Game {
         this.elapsed - this.lastScare < 0.6
           ? 8
           : 28;
-      if (this.player.steps > this.nextStep + 1.6) {
-        this.audio.cue("step");
-        this.nextStep = this.player.steps;
-      }
       if (!this.introPlayed && this.elapsed > 2) {
         this.introPlayed = true;
         this.voice("intro");
@@ -970,6 +1016,7 @@ export class Game {
         posterChanged: this.posterChanged,
         settings: { ...this.settings },
         renderScale: this.renderer.getPixelRatio(),
+        audio: this.audio.diagnostics(),
       }),
       goTo: (id: TargetId) => {
         const target = this.station.targets.find((item) => item.id === id)!;

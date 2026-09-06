@@ -20,7 +20,7 @@ Pure game-state transitions are independent of the renderer and testable without
 - `world/`: scene construction, packaged and procedural materials, static render batches, target metadata and articulated shadow presentation.
 - `world/assets.ts`: same-origin texture/GLB loading, physical repeat scale and PBR colour-space conventions.
 - `world/Shadow.ts`: original capsule/primitive rig; actual enemy displacement drives limbs and a soft contact shadow.
-- `audio/`: HRTF positional effects, listener movement, wall muffling, master/effects/voice buses and pauseable local voice buffers; no runtime speech service.
+- `audio/`: HRTF positional effects, listener movement, wall muffling, master/effects/music/voice buses and pauseable local voice buffers; no runtime speech service.
 - `audio/PanelAudio.ts`: short user-triggered panel feedback in an independent context, stopped on close/focus loss; station audio remains suspended.
 - `audio/voices.ts`: canonical original PA scripts, subtitles, file names and generous subtitle durations.
 - `public/audio/` and `scripts/generate-google-voices.mjs`: committed mono PCM assets and optional Google authoring; credentials are read only by the local Node script.
@@ -101,3 +101,14 @@ Cabinet actions leave the enemy, countdown and station AudioContext suspended. T
 Native drag/drop carries only an A/B identifier. Game-side guards validate the current screen, owned fuse and socket before invoking the same reducer used by keyboard/click controls. UI refresh retains the feedback live region and restores focus to the equivalent control; energising moves focus to Close cabinet. Reduced motion removes insertion/ejection movement; reduced flicker replaces the fading spark burst with a static indicator. Every rejection remains visible as text with the original fuse in the tray.
 
 World cartridges remain target meshes at the original clue locations, outside static scenery batches. Hiding their parent mesh removes the full assembled pickup after collection. They reuse the generous aiming/occlusion checks; smaller rendered size does not require hitting individual triangles. Enemy rules are unchanged; the HUD now explains the next defensive action for seen, hidden, exposed and grace states.
+
+
+## Phase 4C footsteps and adaptive scoring
+
+`audio/soundDesign.ts` contains deterministic PCM instruments and pure danger/fade/gait rules. `audio/Soundscape.ts` owns two persistent stereo loops and short pulse sources on the station's music bus. Audio is created after a player gesture; buffers are generated once and reused. Existing world hum and interaction cues remain on effects, and Google speech remains on voices. The new `musicVolume` field uses the existing settings key and receives its default when absent; puzzle save v2 is unchanged.
+
+Actual Rapier displacement drives the player's movement flag and stride accumulation, so pressing against a solid wall does not repeat footfalls or movement noise. Enemy displacement already drove steps; its stride now preserves its remainder. Crouching, walking and running use distinct player gains, rates and stride lengths. Shoe impacts/scuffs replace the former simple step oscillators. Player channels alternate subtly left/right; enemy footfalls use ground-height HRTF panning and existing geometry-based muffling.
+
+Each fixed active step supplies distance, pursuit, blocked sight, concealment and grace to the score. Proximity rises over a 22-to-2-metre range, with a pursuit intensity floor and reductions through walls/in unwitnessed shelters. Dormant and grace states target zero suspense. Exponential attack (1.6 s) and release (4 s) prevent abrupt changes. The pulse scheduler advances only with simulation, while Web Audio handles playback; there is no background wall-clock timer.
+
+Every station layer shares AudioContext suspension for menus and focus loss. `resetAttempt` cancels voices and pending effect/pulse sources, resets footsteps and clears danger intensity before recovery/new journey resumes; loops are reused without duplication. Sound captions describe a rising pulse, with chase warnings retaining priority. Cabinet feedback remains in its separate, short-lived context and does not resume the soundtrack.
