@@ -12,6 +12,7 @@ Design baseline: the two original root documents. Milestones are acceptance driv
 | 4A — Asset production follow-up | Poly Haven material pass, Blender focal props, natural Google TTS recordings | Real assets integrated with provenance; visual/word/duration review and route/render-cost checks pass; human listening carried into phase 5 | Complete locally; v0.4.1-poc; see ASSET-UPGRADE.md |
 | 4B — Tactile fuse puzzle | Cartridge pickups, hands-on sockets/breaker, spark rejection and clearer defense guidance | Correct/wrong installation, recovery, accessibility, both endings and physical route verified | Complete locally; v0.4.2-poc; see MILESTONE-04B.md |
 | 4C — Adaptive horror audio | Layered player/enemy footsteps, horror bed, proximity suspense and music volume | Cadence, fades, mute, voice ducking, pause/recovery and physical route verified | Complete locally; v0.4.3-poc; see MILESTONE-04C.md |
+| 4D — Listening correction | Concrete-footstep foley, audible background/PA mix and settings auditions | Targeted asset/audio/mute/pause/recovery checks and listening handoff | Complete locally; v0.4.4-poc; see AUDIO-CORRECTION.md |
 | 5 — Release candidate | Cross-browser QA, performance profile, full-run playtests, hosting and rollback, release notes | Safari + Chromium on named reference Mac; measured performance; no critical regressions; deployment reviewed | Planned |
 
 ## POC contract

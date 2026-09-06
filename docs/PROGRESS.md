@@ -4,13 +4,13 @@ Last updated: 2026-09-06
 
 ## Current milestone
 
-**Phase 4C complete locally — footsteps and adaptive horror audio POC, `v0.4.3-poc`.** Earlier milestones remain recoverable at `v0.4.2-poc`, `v0.4.1-poc`, `v0.4.0-beta`, `v0.3.0-alpha`, `v0.2.0-alpha` and `v0.1.0-poc`.
+**Phase 4D complete locally — foley and audio mix correction, `v0.4.4-poc`.** Earlier milestones remain recoverable at `v0.4.3-poc`, `v0.4.2-poc`, `v0.4.1-poc`, `v0.4.0-beta`, `v0.3.0-alpha`, `v0.2.0-alpha` and `v0.1.0-poc`.
 
-Layered shoe impacts/scuffs replace basic player and enemy step tones. A quiet horror bed and a proximity-driven suspense track rise toward pursuit and ease away with distance or concealment. A separate Music & suspense slider, voice ducking and checkpoint reset keep the mix controllable. Scope and acceptance: [audio milestone](MILESTONE-04C.md).
+User listening feedback identified drum-like footsteps and an inaudible background. Five licensed concrete-footstep clips now replace the pitched step synthesis; background harmonics and output calibration raise the exploration bed by approximately 9.1 dB and PA speech by 5 dB at the default mix. The bass music pulse is now an airy suspense swell. Settings offers direct footstep, background and PA auditions, with mute guidance and cancellation. Scope and acceptance: [audio correction](AUDIO-CORRECTION.md).
 
-The tactile fuse puzzle, Poly Haven materials, Blender props and Google-generated voices remain packaged. This is a POC for checking GPT-6 capabilities; human listening, first-time playtests, native Safari and reference-hardware profiling remain release gates.
+The tactile fuse puzzle, adaptive suspense, Poly Haven materials, Blender props and Google-generated voices remain packaged. This is a POC for checking GPT-6 capabilities; first-time playtests, native Safari and reference-hardware profiling remain release gates. Automated audio checks do not establish subjective sound quality; this release is ready for another listening pass.
 
-Play [the built preview](http://127.0.0.1:4173/?v=0.4.3) while the preview server is running. To restart it: `npm run build && npm run preview -- --port 4173 --strictPort`. Existing saves work; refresh and continue to hear the new audio. See `README.md` for controls.
+Play [the built preview](http://127.0.0.1:4173/?v=0.4.4) while the preview server is running. To restart it: `npm run build && npm run preview -- --port 4173 --strictPort`. Existing saves work. Refresh, open Settings and use **Test footsteps**, **Test background** and **Test PA voice**; stored volume preferences are preserved. See `README.md` for controls.
 
 ## Completed
 
@@ -63,15 +63,19 @@ Play [the built preview](http://127.0.0.1:4173/?v=0.4.3) while the preview serve
 - Added independently saved music volume, background ducking under speech, gradual danger attack/release and a rising-pulse caption. Grace and unwitnessed hiding reduce suspense.
 - Verified that menus suspend the actual audio clock and score state, and recovery cancels transient footsteps/pulses and resets danger while reusing the loops.
 
+- Replaced synthesized footfalls with five short concrete-footstep clips from Kenney's CC0 Impact Sounds pack; retained sources, licence, processing instructions and checksums. Packaged WAVs add 24,062 bytes.
+- Raised the background and voice calibration, moved the drone toward audible midrange and replaced the bass double hit with filtered-air suspense. Shared peak compression controls overlaps at high user volume.
+- Added Settings sound checks with the selected bus/master levels and live subtitles/status. Their separate context never resumes the paused station, and pending playback cancels on Stop, settings changes, focus loss or close.
+- Added startup recovery for missing foley and browser checks for actual audition output, delayed-fetch cancellation and mute behavior. Existing movement, pursuit and cabinet pause/recovery checks still pass.
+
 ## Validation and handoff
 
-- Strict TypeScript, formatting, all 62 unit tests and the production build pass. Final test-configuration/script edits also pass type/format checks.
-- All 25 unique browser scenarios pass across full/focused runs: 20 in the 16.4-minute complete run, then the five timeout-only cases in a 2.4-minute focused rerun. Assertion/default test limits now allow software-renderer startup and simulation. Runtime code remained fixed; both endings, continuous physical traversal, new audio scenarios, shelters, capture, settings and cabinet recovery are verified.
-- Built-preview smoke passes: no development bridge; fresh start; independent music control/default; audio suspension/resume; four decodable local voices; v2 recovery grace; physical dispatch/persisted sequence; no JS/HTTP errors.
-- Chrome 152.0.7977.76 on macOS 26.4.1, Playwright / SwiftShader. Raw PCM bounds and loop/tail measurements are in `docs/audio-phase4c.json`; actual browser output/muting is checked with an analyser. These checks do not establish subjective listening quality or hardware FPS.
-- Current sound-controls, title, dispatch and pursuit screenshots are archived under `docs/media/phase4c-*`. Station geometry, packaged models/textures/voices and the save schema are unchanged; earlier rendering evidence remains in `docs/rendering-phase4b.json`.
-- Release marker: `v0.4.3-poc`. Preview is on 4173, development on 5173. Saves/settings remain local to each browser and origin; absent music preferences receive the new default.
-- Detailed environment, validation boundaries and human listening walkthrough: [QA](QA.md).
+- Strict TypeScript, formatting, all 62 unit tests and the production build pass.
+- All six targeted browser cases pass in a 2.5-minute run: sound checks, missing foley recovery, pursuit/capture, physical footstep cadence, adaptive score/output/mute, and cabinet pause/recovery. The expanded 27-case suite was not rerun in full for this correction; the previous complete/focused 25-case evidence is archived in [phase 4C QA](QA-PHASE4C.md).
+- Built-preview smoke passes: production hook removal, fresh start, music control/default, audio pause/resume, four local voices, v2 grace, physical dispatch/persistence and no JS/HTTP errors. Title, dispatch and sound controls were reviewed; a button-contrast correction was rebuilt and checked at standard and compact sizes with large text/high contrast. Evidence is under `docs/media/phase4d-*`.
+- Chrome 152.0.7977.76 on macOS 26.4.1, Playwright / SwiftShader. [Mix comparison](audio-phase4d.json) records calculated default-level changes before compression/device output. Browser analysers verify output and mute; perceived quality still needs listening.
+- Release marker: `v0.4.4-poc`. Preview is on 4173, development on 5173. Save schema and puzzle/enemy rules are unchanged; user settings stay local to each browser and origin.
+- Detailed environment, validation boundaries and listening walkthrough: [QA](QA.md).
 
 ## Next — Phase 5
 
@@ -117,3 +121,4 @@ Play [the built preview](http://127.0.0.1:4173/?v=0.4.3) while the preview serve
 | 2026-09-06 | Phase 4C scope | User requested richer footsteps for both characters, horror ambience and a near-enemy suspense fade |
 | 2026-09-06 | Adaptive audio | Original PCM footfalls/loops/pulse, physical cadence, independent music level, voice ducking and pause/recovery implemented in 94cb623 |
 | 2026-09-06 | Audio POC validation | 62 unit tests and all 25 browser scenarios across full/focused runs pass; software-test deadlines corrected, built-preview/audio-control smoke and screenshot/signal review pass; v0.4.3-poc |
+| 2026-09-06 | Listening correction | User feedback prompted concrete-footstep foley, stronger background/PA mix and Settings auditions; 62 unit tests, six targeted browser cases, built-preview smoke and final visual review pass for v0.4.4-poc |

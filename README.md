@@ -4,9 +4,9 @@
 
 A first-person atmospheric escape game set in a fictional Indian metro station. Built for desktop browsers with TypeScript, Three.js, Rapier, and Vite.
 
-**Current POC build: v0.4.3 / adaptive horror audio milestone.** Restore power, reconstruct staff access, evade a listening shadow, and choose which train to board. Three puzzles, stealth and two endings are playable. This is not a production release. See [progress](docs/PROGRESS.md) for the verified state and [roadmap](docs/ROADMAP.md) for release gates.
+**Current POC build: v0.4.4 / foley and audio mix correction.** Restore power, reconstruct staff access, evade a listening shadow, and choose which train to board. Three puzzles, stealth and two endings are playable. This is not a production release. See [progress](docs/PROGRESS.md) for the verified state and [roadmap](docs/ROADMAP.md) for release gates.
 
-![Last Metro adaptive audio POC](docs/media/phase4c-title.png)
+![Last Metro audio correction POC](docs/media/phase4d-title.png)
 
 ## Development
 
@@ -26,7 +26,7 @@ npm run build
 npm run preview -- --port 4173 --strictPort
 ```
 
-Open [the local preview](http://127.0.0.1:4173/?v=0.4.3). The server must be running. Checkpoints and settings are local to each browser and origin, so the dev server and built preview have separate saves.
+Open [the local preview](http://127.0.0.1:4173/?v=0.4.4). The server must be running. Checkpoints and settings are local to each browser and origin, so the dev server and built preview have separate saves.
 
 ## Controls
 
@@ -47,9 +47,9 @@ Use **How to play** from the title or pause for movement, puzzles and stealth gu
 
 At the power cabinet, **select a fuse and click a holder**, or **drag it into place**. Tab and Enter/Space provide the same controls. Wrong holders spark and eject the cartridge back to the tray; nothing is consumed. Click a seated fuse to remove it. Fit both required fuses, throw the main breaker, then close the cabinet. The engineer’s note and optional hints show the connections.
 
-Player footsteps now include shoe impacts and scuffs; sprinting is faster/louder, and crouching is quieter. The shadow has heavier directional footsteps that are muffled through walls. A low horror bed plays beneath exploration, with suspense strings and a quickening pulse that fade up near the enemy and ease away with distance or concealment.
+Player footsteps use packaged concrete-footstep foley; sprinting is faster/louder, and crouching is quieter. The shadow has heavier directional footsteps that are muffled through walls. A low horror bed plays beneath exploration, with suspense strings and quickening airy swells that fade up near the enemy and ease away with distance or concealment.
 
-Settings include large text, high contrast, optional automatic reminders, captions, independent master/effects/music/voice volumes and reduced motion/flicker. **Music & suspense** controls the horror soundtrack separately from footsteps. Spoken announcements lower the background mix while speaking. The low preset reduces scene resolution and decorative lighting while keeping notes and menus crisp.
+Settings include large text, high contrast, optional automatic reminders, captions, independent master/effects/music/voice volumes and reduced motion/flicker. **Music & suspense** controls the horror soundtrack separately from footsteps. Spoken announcements lower the background mix while speaking. **Test footsteps**, **Test background** and **Test PA voice** in Settings let you hear each at the selected level while the station stays paused. Muted sliders remain muted; sound checks explain which controls to raise. The low preset reduces scene resolution and decorative lighting while keeping notes and menus crisp.
 
 Read the engineer’s note on the right platform wall first. Clues and recording transcripts stay in your journal. A spoiler walkthrough is in [QA](docs/QA.md) if you get stuck. Power wakes the shadow after a 12-second warning. Walking is quiet; crouching is quieter; sprinting attracts it. Walls block its sight. Break sight, step inside a marked shelter and press E to hide. It remembers seeing you enter. A token can redirect it after you break sight; there are three per attempt. The ventilation purge beside the service entrance runs for eight seconds and can be reused after a 24-second cooldown.
 
