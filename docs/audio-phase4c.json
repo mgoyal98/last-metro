@@ -1,0 +1,97 @@
+{
+  "date": "2026-09-06",
+  "version": "0.4.3",
+  "source": "src/audio/soundDesign.ts",
+  "sampleRate": 22050,
+  "footfalls": {
+    "player": [
+      {
+        "seconds": 0.3,
+        "peak": 0.8199999928474426,
+        "rms": 0.10072646976574222,
+        "seamDelta": 1.5780178941326994e-8
+      },
+      {
+        "seconds": 0.3,
+        "peak": 0.8199999928474426,
+        "rms": 0.10547819394985329,
+        "seamDelta": 2.1136453653980425e-7
+      },
+      {
+        "seconds": 0.3,
+        "peak": 0.8199999928474426,
+        "rms": 0.10093814938745811,
+        "seamDelta": 3.1425375368598907e-7
+      },
+      {
+        "seconds": 0.3,
+        "peak": 0.8199999928474426,
+        "rms": 0.10588668509944417,
+        "seamDelta": 5.2747889611737264e-8
+      }
+    ],
+    "enemy": [
+      {
+        "seconds": 0.46,
+        "peak": 0.8199999928474426,
+        "rms": 0.10979603835822206,
+        "seamDelta": 5.8464575403149865e-8
+      },
+      {
+        "seconds": 0.46,
+        "peak": 0.8199999928474426,
+        "rms": 0.11132163502975796,
+        "seamDelta": 5.801562963370088e-8
+      },
+      {
+        "seconds": 0.46,
+        "peak": 0.8199999928474426,
+        "rms": 0.11126114024262213,
+        "seamDelta": 5.0608797153017804e-8
+      },
+      {
+        "seconds": 0.46,
+        "peak": 0.8199999928474426,
+        "rms": 0.11483686045420331,
+        "seamDelta": 5.620065124389839e-8
+      }
+    ]
+  },
+  "loops": {
+    "air": [
+      {
+        "seconds": 8,
+        "peak": 0.3627561330795288,
+        "rms": 0.12622762028256326,
+        "seamDelta": 0.005983820650726557
+      },
+      {
+        "seconds": 8,
+        "peak": 0.39630839228630066,
+        "rms": 0.1257678998902198,
+        "seamDelta": 0.005996242165565491
+      }
+    ],
+    "strings": [
+      {
+        "seconds": 8,
+        "peak": 0.3678772449493408,
+        "rms": 0.10132488228717075,
+        "seamDelta": 0.0279703326523304
+      },
+      {
+        "seconds": 8,
+        "peak": 0.42365366220474243,
+        "rms": 0.10132488230387093,
+        "seamDelta": 0.02697022259235382
+      }
+    ]
+  },
+  "pulse": {
+    "seconds": 0.5,
+    "peak": 0.614626407623291,
+    "rms": 0.10410355453188246,
+    "seamDelta": 3.8647407052394556e-8
+  },
+  "limits": "Deterministic raw PCM signal measurements, before the in-game volume buses, spatial filters and device resampling. Not a subjective listening assessment or full-game loudness measurement."
+}

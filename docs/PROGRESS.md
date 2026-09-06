@@ -4,15 +4,13 @@ Last updated: 2026-09-06
 
 ## Current milestone
 
-**Phase 4B complete locally — tactile fuse puzzle POC, `v0.4.2-poc`.** Earlier milestones remain recoverable at `v0.4.1-poc`, `v0.4.0-beta`, `v0.3.0-alpha`, `v0.2.0-alpha` and `v0.1.0-poc`.
+**Phase 4C complete locally — footsteps and adaptive horror audio POC, `v0.4.3-poc`.** Earlier milestones remain recoverable at `v0.4.2-poc`, `v0.4.1-poc`, `v0.4.0-beta`, `v0.3.0-alpha`, `v0.2.0-alpha` and `v0.1.0-poc`.
 
-Small glass/metal cartridge pickups replace the glowing bricks. The cabinet now supports selecting or dragging fuses into holders, recoverable sparks on wrong placements, removal/refitting and a main breaker. Help and contextual HUD guidance explain existing stealth defenses. Scope and exit gates: [tactile fuse milestone](MILESTONE-04B.md).
+Layered shoe impacts/scuffs replace basic player and enemy step tones. A quiet horror bed and a proximity-driven suspense track rise toward pursuit and ease away with distance or concealment. A separate Music & suspense slider, voice ducking and checkpoint reset keep the mix controllable. Scope and acceptance: [audio milestone](MILESTONE-04C.md).
 
-Two Poly Haven materials, three original Blender props and four Google-generated announcements remain packaged. Editable sources, exact provenance and reproduction steps are retained in [the asset pass](ASSET-UPGRADE.md). This remains a POC for checking GPT-6 capabilities; human listening, native Safari, hardware profiling and first-time playtesting are release gates.
+The tactile fuse puzzle, Poly Haven materials, Blender props and Google-generated voices remain packaged. This is a POC for checking GPT-6 capabilities; human listening, first-time playtests, native Safari and reference-hardware profiling remain release gates.
 
-Completed beta scope and exit gates: `docs/MILESTONE-04.md`. Optional staged hints, larger readable clues, materials, animation, loading and static rendering efficiency are implemented on the complete escape loop.
-
-Play the built preview at [127.0.0.1:4173](http://127.0.0.1:4173/?v=0.4.2) while the preview server is running. To restart it: `npm run build && npm run preview -- --port 4173 --strictPort`. See `README.md` for controls. Choose **New Journey** to try fuse installation if the current save already has power restored.
+Play [the built preview](http://127.0.0.1:4173/?v=0.4.3) while the preview server is running. To restart it: `npm run build && npm run preview -- --port 4173 --strictPort`. Existing saves work; refresh and continue to hear the new audio. See `README.md` for controls.
 
 ## Completed
 
@@ -60,19 +58,20 @@ Play the built preview at [127.0.0.1:4173](http://127.0.0.1:4173/?v=0.4.2) while
 - Preserved v2 saves: powered loads reconstruct locked holders; unpowered reloads return collected fuses to the tray. Partial placement survives closing/reopening during a run.
 - Added explicit sight-breaking, shelter, distraction and recovery guidance to help and the contextual threat HUD.
 
+- Added eight original cached footfalls, stereo drone/air and dissonant suspense loops, plus a proximity-driven double pulse. No new asset download or external service is required.
+- Made player cadence follow actual Rapier displacement; crouch/walk/sprint change gain and timing, and stationary wall contact no longer repeats movement sounds/noise. Enemy steps retain directional HRTF, distance attenuation and wall muffling.
+- Added independently saved music volume, background ducking under speech, gradual danger attack/release and a rising-pulse caption. Grace and unwitnessed hiding reduce suspense.
+- Verified that menus suspend the actual audio clock and score state, and recovery cancels transient footsteps/pulses and resets danger while reusing the loops.
+
 ## Validation and handoff
 
-- Strict TypeScript, formatting, all 56 unit tests and the production build pass.
-- All 23 browser cases pass in one complete run (8.8 minutes), including both endings, continuous physical traversal, all shelters, capture, prop-download recovery and the new cabinet input/audio/reload/accessibility cases. Runtime source stayed fixed throughout the run.
-- Built-preview smoke passes: no development bridge, all four Google WAVs decode with mono channels and valid subtitle durations, audio suspends/resumes, v2 Control recovery and physical dispatch persist; no JS/HTTP errors.
-- Chromium environment: Chrome 152.0.7977.76 on macOS 26.4.1, Playwright / SwiftShader. Current fixed-view evidence is in `docs/rendering-phase4b.json`; this is not a hardware FPS benchmark.
-- Pickup, cabinet, compact readable interface, pursuit/help and built title/dispatch evidence is archived under `docs/media`. The prior asset-source, transcript and credential verification remains recorded in `docs/QA-PHASE4A.md`; this turn adds no credentials or speech-generation requests.
-- Release marker: `v0.4.2-poc`. Preview remains on port 4173; development on 5173. Use `?v=0.4.2` to refresh. Save formats remain compatible; each browser/origin keeps its own save.
-- Full environment, result details, prior milestone evidence and remaining limits: [QA](QA.md).
-
-## Active follow-up — Phase 4C
-
-The user requested richer player/enemy footsteps, horror ambience and suspense music that fades up near the enemy. Work is in progress on original layered sound synthesis, distance-driven music, independent music volume and pause/recovery verification. The last completed tag remains `v0.4.2-poc`.
+- Strict TypeScript, formatting, all 62 unit tests and the production build pass. Final test-configuration/script edits also pass type/format checks.
+- All 25 unique browser scenarios pass across full/focused runs: 20 in the 16.4-minute complete run, then the five timeout-only cases in a 2.4-minute focused rerun. Assertion/default test limits now allow software-renderer startup and simulation. Runtime code remained fixed; both endings, continuous physical traversal, new audio scenarios, shelters, capture, settings and cabinet recovery are verified.
+- Built-preview smoke passes: no development bridge; fresh start; independent music control/default; audio suspension/resume; four decodable local voices; v2 recovery grace; physical dispatch/persisted sequence; no JS/HTTP errors.
+- Chrome 152.0.7977.76 on macOS 26.4.1, Playwright / SwiftShader. Raw PCM bounds and loop/tail measurements are in `docs/audio-phase4c.json`; actual browser output/muting is checked with an analyser. These checks do not establish subjective listening quality or hardware FPS.
+- Current sound-controls, title, dispatch and pursuit screenshots are archived under `docs/media/phase4c-*`. Station geometry, packaged models/textures/voices and the save schema are unchanged; earlier rendering evidence remains in `docs/rendering-phase4b.json`.
+- Release marker: `v0.4.3-poc`. Preview is on 4173, development on 5173. Saves/settings remain local to each browser and origin; absent music preferences receive the new default.
+- Detailed environment, validation boundaries and human listening walkthrough: [QA](QA.md).
 
 ## Next — Phase 5
 
@@ -115,3 +114,6 @@ The user requested richer player/enemy footsteps, horror ambience and suspense m
 | 2026-09-06 | Phase 4B scope | User-requested fuse shape, hands-on cabinet, recoverable sparks and existing defense guidance defined before phase 5 |
 | 2026-09-06 | Tactile fuse implementation | Cartridge geometry, pure seating rules, accessible tray/holders/breaker, isolated panel audio and contextual stealth help implemented with v2 compatibility |
 | 2026-09-06 | Fuse POC validation | 56 unit tests, all 23 browser cases in one run, types, formatting, build and built-preview smoke pass; visual evidence and handoff recorded for v0.4.2-poc |
+| 2026-09-06 | Phase 4C scope | User requested richer footsteps for both characters, horror ambience and a near-enemy suspense fade |
+| 2026-09-06 | Adaptive audio | Original PCM footfalls/loops/pulse, physical cadence, independent music level, voice ducking and pause/recovery implemented in 94cb623 |
+| 2026-09-06 | Audio POC validation | 62 unit tests and all 25 browser scenarios across full/focused runs pass; software-test deadlines corrected, built-preview/audio-control smoke and screenshot/signal review pass; v0.4.3-poc |

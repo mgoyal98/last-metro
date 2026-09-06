@@ -2,6 +2,8 @@
 
 User request, 2026-09-06: clearer footsteps for both characters, horror background sound and suspense music that fades from quiet to loud as the enemy approaches.
 
+**Completed locally: v0.4.3-poc.** All 62 unit tests, 25 unique browser scenarios across full/focused runs, types, formatting, build and built-preview smoke pass. Technical signal and visual evidence, plus remaining human listening/release gates, are in [QA](QA.md).
+
 ## Scope and acceptance
 
 - Original layered footfalls with shoe impact, floor contact and scuff; distinct player and heavier enemy timbres. Real displacement drives cadence. Crouching is quieter, sprinting faster/louder, stationary collision produces no repeated steps. Enemy steps retain direction, distance attenuation and wall muffling.
