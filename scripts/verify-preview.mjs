@@ -37,6 +37,14 @@ try {
   ).toBeVisible();
   expect(await page.evaluate(() => "__LAST_METRO__" in window)).toBe(false);
   await page.screenshot({ path: "test-results/phase4c-title.png" });
+  await page.getByRole("button", { name: /^SETTINGS/ }).click();
+  const music = page.getByLabel("Music and suspense volume", { exact: true });
+  await expect(music).toHaveValue("0.65");
+  await music.evaluate((element) =>
+    element.scrollIntoView({ block: "center" }),
+  );
+  await page.screenshot({ path: "test-results/phase4c-sound-controls.png" });
+  await page.getByRole("button", { name: "DONE", exact: true }).click();
   await page.getByRole("button", { name: "ENTER THE STATION" }).click();
   await expect(page.locator("#subtitle")).toContainText("For your safety");
   await expect
@@ -140,6 +148,7 @@ try {
         checks: [
           "production hook removal",
           "fresh start",
+          "independent music control with default level",
           "audio suspension/resume",
           "four decodable voice assets",
           "v2 recovery grace",
