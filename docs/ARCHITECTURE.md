@@ -112,3 +112,12 @@ Actual Rapier displacement drives the player's movement flag and stride accumula
 Each fixed active step supplies distance, pursuit, blocked sight, concealment and grace to the score. Proximity rises over a 22-to-2-metre range, with a pursuit intensity floor and reductions through walls/in unwitnessed shelters. Dormant and grace states target zero suspense. Exponential attack (1.6 s) and release (4 s) prevent abrupt changes. The pulse scheduler advances only with simulation, while Web Audio handles playback; there is no background wall-clock timer.
 
 Every station layer shares AudioContext suspension for menus and focus loss. `resetAttempt` cancels voices and pending effect/pulse sources, resets footsteps and clears danger intensity before recovery/new journey resumes; loops are reused without duplication. Sound captions describe a rising pulse, with chase warnings retaining priority. Cabinet feedback remains in its separate, short-lived context and does not resume the soundtrack.
+
+
+## v0.4.4 foley and audibility correction
+
+`audio/footsteps.ts` fetches and validates the five packaged mono PCM WAVs during `Game.create`, alongside visuals and collision. Preparation does not open an AudioContext. A missing/corrupt required foley file enters the existing startup reload path. The bank is passed into `StationAudio` and `SoundCheck`; Web Audio buffers are cached on first use. The former procedural footfall generator is removed; gait/cadence and enemy spatialization remain intact.
+
+`audio/mix.ts` shares output calibration and peak compression between gameplay and auditions. Stronger midrange ambience and a higher output factor address the listening report while preserving all saved sliders, explicit mute and speech ducking. The suspense pulse now uses an airy envelope instead of a pitched bass hit.
+
+`audio/SoundCheck.ts` owns a separate lazy context for explicit settings auditions. Its generation guard prevents a delayed decode/resume from playing after cancellation. Close, blur, page exit and settings edits cancel sources; completed auditions suspend their context. It never resumes the paused station or changes puzzle/threat state. Voice auditions show the exact subtitle, and mute/failure feedback is visible in the settings live region. Story PA still occurs at its existing milestones; background music plays continuously during active exploration.

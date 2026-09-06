@@ -34,7 +34,7 @@ export class Soundscape {
   ) {
     this.air = ctx.createGain();
     this.strings = ctx.createGain();
-    this.air.gain.value = 0.5;
+    this.air.gain.value = 0.85;
     this.strings.gain.value = 0;
     for (const layer of ["air", "strings"] as const) {
       const source = ctx.createBufferSource();
@@ -54,7 +54,7 @@ export class Soundscape {
       0.1,
     );
     this.air.gain.setTargetAtTime(
-      0.5 + this.intensity * 0.25,
+      0.85 + this.intensity * 0.15,
       this.ctx.currentTime,
       0.2,
     );
@@ -83,7 +83,7 @@ export class Soundscape {
     this.strings.gain.cancelScheduledValues(this.ctx.currentTime);
     this.strings.gain.value = 0;
     this.air.gain.cancelScheduledValues(this.ctx.currentTime);
-    this.air.gain.value = 0.5;
+    this.air.gain.value = 0.85;
     for (const source of this.beats) source.stop();
     this.beats.clear();
   }

@@ -31,19 +31,19 @@ await page.addInitScript(() => {
 });
 mkdirSync("test-results", { recursive: true });
 try {
-  await page.goto("http://127.0.0.1:4173/?test&v=0.4.3");
+  await page.goto("http://127.0.0.1:4173/?test&v=0.4.4");
   await expect(
     page.getByRole("button", { name: "ENTER THE STATION" }),
   ).toBeVisible();
   expect(await page.evaluate(() => "__LAST_METRO__" in window)).toBe(false);
-  await page.screenshot({ path: "test-results/phase4c-title.png" });
+  await page.screenshot({ path: "test-results/phase4d-title.png" });
   await page.getByRole("button", { name: /^SETTINGS/ }).click();
   const music = page.getByLabel("Music and suspense volume", { exact: true });
   await expect(music).toHaveValue("0.65");
   await music.evaluate((element) =>
     element.scrollIntoView({ block: "center" }),
   );
-  await page.screenshot({ path: "test-results/phase4c-sound-controls.png" });
+  await page.screenshot({ path: "test-results/phase4d-sound-controls.png" });
   await page.getByRole("button", { name: "DONE", exact: true }).click();
   await page.getByRole("button", { name: "ENTER THE STATION" }).click();
   await expect(page.locator("#subtitle")).toContainText("For your safety");
@@ -130,7 +130,7 @@ try {
   await page.getByLabel("Departure step 1").selectOption("isolate");
   await page.getByLabel("Departure step 2").selectOption("signal");
   await page.getByLabel("Departure step 3").selectOption("release");
-  await page.screenshot({ path: "test-results/phase4c-dispatch.png" });
+  await page.screenshot({ path: "test-results/phase4d-dispatch.png" });
   await page.getByRole("button", { name: "EXECUTE SEQUENCE" }).click();
   await expect(page.locator("#subtitle")).toContainText("Boarding is enabled");
   expect(

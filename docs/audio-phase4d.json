@@ -1,0 +1,13 @@
+{
+  "version": "0.4.4",
+  "date": "2026-09-06",
+  "master": 0.45,
+  "music": 0.65,
+  "explorationBed": {
+    "beforeRms": 0.0033229421039384782,
+    "afterRms": 0.009476357488194295,
+    "increaseDb": 9.102373224122434
+  },
+  "voiceGainIncreaseDb": 4.997549464331998,
+  "limits": "Calculated steady exploration bed and voice calibration, before peak compression and device output. Not a subjective loudness/quality assessment. Explicitly muted user settings stay muted."
+}

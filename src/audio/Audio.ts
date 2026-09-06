@@ -1,7 +1,8 @@
 import { VOICES } from "./voices";
 import type { Point } from "../game/navigation";
 import { pcmBuffer, Soundscape } from "./Soundscape";
-import { footfall, GAITS } from "./soundDesign";
+import { GAITS } from "./soundDesign";
+import { connectOutput, OUTPUT_GAIN, VOICE_GAIN } from "./mix";
 import type { DangerSound, Gait } from "./soundDesign";
 
 export class StationAudio {
@@ -22,13 +23,14 @@ export class StationAudio {
   private readonly buffers = new Map<string, Promise<AudioBuffer>>();
   private volume = 0.45;
   private suspended = false;
+  constructor(private readonly footstepData: readonly Float32Array[]) {}
   async start(): Promise<void> {
     try {
       if (!this.context) {
         this.context = new AudioContext();
         this.master = this.context.createGain();
         this.master.gain.value = 0;
-        this.master.connect(this.context.destination);
+        connectOutput(this.context, this.master);
         this.effects = this.context.createGain();
         this.effects.connect(this.master);
         this.speech = this.context.createGain();
@@ -60,7 +62,7 @@ export class StationAudio {
     this.volume = value;
     if (this.context && this.master)
       this.master.gain.setTargetAtTime(
-        this.suspended ? 0 : value * 0.18,
+        this.suspended ? 0 : value * OUTPUT_GAIN,
         this.context.currentTime,
         0.08,
       );
@@ -80,7 +82,7 @@ export class StationAudio {
         this.context.currentTime,
         0.12,
       );
-    if (this.speech) this.speech.gain.value = voice * 4;
+    if (this.speech) this.speech.gain.value = voice * VOICE_GAIN;
     if (this.music && this.context)
       this.music.gain.setTargetAtTime(
         music * (this.voiceSource && voice > 0 ? 0.3 : 1),
@@ -116,9 +118,12 @@ export class StationAudio {
     const ctx = this.context;
     if (!ctx || !this.effects || this.suspended) return;
     const count = this.steps[actor]++;
-    const key = `${actor}/${count % 4}`;
+    const key = `${count % this.footstepData.length}`;
     if (!this.footfalls.has(key))
-      this.footfalls.set(key, pcmBuffer(ctx, [footfall(actor, count % 4)]));
+      this.footfalls.set(
+        key,
+        pcmBuffer(ctx, [this.footstepData[count % this.footstepData.length]]),
+      );
     const source = ctx.createBufferSource();
     const gain = ctx.createGain();
     const filter = ctx.createBiquadFilter();
@@ -126,7 +131,7 @@ export class StationAudio {
       actor === "enemy" ? ctx.createPanner() : ctx.createStereoPanner();
     source.buffer = this.footfalls.get(key)!;
     source.playbackRate.value =
-      (actor === "enemy" ? 0.9 : GAITS[gait].rate) *
+      (actor === "enemy" ? 0.96 : GAITS[gait].rate) *
       [1, 0.97, 1.04, 0.99][count % 4];
     gain.gain.value =
       (actor === "enemy" ? 1.6 : GAITS[gait].gain) * (muffled ? 0.48 : 1);

@@ -1,8 +1,9 @@
 import { expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { readFootstep, FOOTSTEP_FILES } from "../src/audio/footsteps";
 import {
   dangerTarget,
   fadeDanger,
-  footfall,
   GAITS,
   horrorLoop,
   SOUND_RATE,
@@ -47,29 +48,26 @@ it("approach takes seconds to swell and release fades more slowly without oversh
   expect(fadeDanger(level, 0, 0)).toBe(level);
   expect(fadeDanger(0, 1, 2)).toBeCloseTo(level);
 });
-it("footfalls are reproducible, varied, bounded and end without a click", () => {
-  for (const actor of ["player", "enemy"] as const) {
-    for (let variation = 0; variation < 4; variation++) {
-      const samples = footfall(actor, variation);
-      expect(samples.length / SOUND_RATE).toBeCloseTo(
-        actor === "enemy" ? 0.46 : 0.3,
-        3,
-      );
-      expect(
-        samples.every(
-          (value) => Number.isFinite(value) && Math.abs(value) <= 0.821,
-        ),
-      ).toBe(true);
-      expect(Math.abs(samples[0])).toBe(0);
-      expect(Math.abs(samples.at(-1)!)).toBeLessThan(0.001);
-      const rms = Math.sqrt(
-        samples.reduce((sum, value) => sum + value * value, 0) / samples.length,
-      );
-      expect(rms).toBeGreaterThan(0.06);
-      expect(footfall(actor, variation)).toEqual(samples);
-    }
-  }
-  expect(footfall("player", 0)).not.toEqual(footfall("player", 1));
+it("packaged concrete footfalls are short, distinct PCM contacts with preserved gait differences", () => {
+  const signals = FOOTSTEP_FILES.map((file) => {
+    const bytes = readFileSync(`public/audio/${file}`);
+    const signal = readFootstep(
+      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+    );
+    expect(signal.length / SOUND_RATE).toBeGreaterThan(0.09);
+    expect(signal.length / SOUND_RATE).toBeLessThan(0.15);
+    expect(
+      signal.every(
+        (value) => Number.isFinite(value) && Math.abs(value) <= 0.701,
+      ),
+    ).toBe(true);
+    expect(
+      Math.sqrt(signal.reduce((sum, v) => sum + v * v, 0) / signal.length),
+    ).toBeGreaterThan(0.04);
+    return signal;
+  });
+  expect(signals[0]).not.toEqual(signals[1]);
+  expect(() => readFootstep(new ArrayBuffer(50))).toThrow();
   expect(GAITS.crouch.gain).toBeLessThan(GAITS.walk.gain);
   expect(GAITS.run.gain).toBeGreaterThan(GAITS.walk.gain);
   expect(4.7 / GAITS.run.stride).toBeGreaterThan(2.65 / GAITS.walk.stride);

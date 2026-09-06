@@ -1,4 +1,4 @@
-/** Original, deterministic PCM instruments. No recordings or network assets. */
+/** Original background instruments and gait rules. Footsteps use the packaged foley bank. */
 export const SOUND_RATE = 22050;
 export type Gait = "walk" | "run" | "crouch";
 export interface DangerSound {
@@ -46,38 +46,6 @@ function random(seed: number): () => number {
     return (seed >>> 0) / 2147483648 - 1;
   };
 }
-export function footfall(
-  actor: "player" | "enemy",
-  variation: number,
-): Float32Array {
-  const heavy = actor === "enemy";
-  const duration = heavy ? 0.46 : 0.3;
-  const pcm = new Float32Array(Math.round(duration * SOUND_RATE));
-  const noise = random(3187 + variation * 173 + (heavy ? 97 : 0));
-  let low = 0;
-  let peak = 0;
-  for (let i = 0; i < pcm.length; i++) {
-    const t = i / SOUND_RATE;
-    const n = noise();
-    low += (n - low) * 0.16;
-    const attack = Math.min(1, t / 0.003);
-    const heel =
-      Math.sin(tau * ((heavy ? 67 : 104) * t + 1.9 * (1 - Math.exp(-t * 36)))) *
-      Math.exp(-t * (heavy ? 21 : 34));
-    const contact = (n - low) * Math.exp(-t * 105) * 0.48;
-    const toe = Math.max(0, t - 0.065);
-    const scuff = low * Math.min(1, toe * 70) * Math.exp(-toe * 28) * 1.1;
-    const contactBody = low * Math.exp(-t * 65) * 0.3;
-    pcm[i] =
-      (heel * 0.65 + contact + scuff + contactBody) *
-      attack *
-      Math.min(1, (duration - t) / 0.035);
-    peak = Math.max(peak, Math.abs(pcm[i]));
-  }
-  for (let i = 0; i < pcm.length; i++) pcm[i] *= 0.82 / peak;
-  return pcm;
-}
-
 /** All tonal frequencies/modulators complete whole cycles in this eight-second loop. */
 export function horrorLoop(layer: "air" | "strings"): Float32Array[] {
   return [0, 1].map((channel) => {
@@ -88,14 +56,15 @@ export function horrorLoop(layer: "air" | "strings"): Float32Array[] {
       const t = i / SOUND_RATE;
       const phase = channel * 0.7;
       if (layer === "air") {
-        breath += (noise() - breath) * 0.025;
+        breath += (noise() - breath) * 0.12;
         const seam = Math.min(1, t / 0.4, (8 - t) / 0.4);
         const swell = 0.65 + Math.sin(tau * 0.125 * t + phase) * 0.2;
         pcm[i] =
-          (Math.sin(tau * 36.75 * t + phase) * 0.24 +
-            Math.sin(tau * 73.5 * t) * 0.1 +
-            Math.sin(tau * 110.125 * t + phase) * 0.035 +
-            Math.sin(tau * 440.125 * t + phase) * 0.028) *
+          (Math.sin(tau * 73.5 * t + phase) * 0.1 +
+            Math.sin(tau * 147 * t) * 0.14 +
+            Math.sin(tau * 220.5 * t + phase) * 0.13 +
+            Math.sin(tau * 293.875 * t) * 0.08 +
+            Math.sin(tau * 440.125 * t + phase) * 0.05) *
             swell +
           breath * seam * 0.32;
       } else {
@@ -118,16 +87,13 @@ export function horrorLoop(layer: "air" | "strings"): Float32Array[] {
 
 export function suspensePulse(): Float32Array {
   const pcm = new Float32Array(SOUND_RATE * 0.5);
+  const noise = random(6221);
+  let air = 0;
   for (let i = 0; i < pcm.length; i++) {
     const t = i / SOUND_RATE;
-    const hit = (time: number) =>
-      time < 0
-        ? 0
-        : Math.sin(tau * (51 * time + 0.6 * (1 - Math.exp(-time * 35)))) *
-          Math.min(1, time * 250) *
-          Math.exp(-time * 27);
-    pcm[i] =
-      (hit(t) + hit(t - 0.135) * 0.58) * 0.7 * Math.min(1, (0.5 - t) / 0.025);
+    air += (noise() - air) * 0.16;
+    const envelope = Math.sin((Math.PI * t) / 0.5) ** 2;
+    pcm[i] = (air * 0.55 + Math.sin(tau * 440 * t) * 0.045) * envelope;
   }
   return pcm;
 }

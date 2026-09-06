@@ -545,3 +545,27 @@ select {
     padding: 9px 12px;
   }
 }
+
+.sound-check {
+  padding-top: 20px;
+}
+.sound-check-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.sound-check-buttons button {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: inherit;
+  padding: 10px 12px;
+  font-size: 12px;
+}
+.sound-check-buttons button:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+#sound-check-status {
+  min-height: 42px;
+}

@@ -1,6 +1,6 @@
 # Asset register
 
-Current build: **v0.4.3 POC, 2026-09-06**. The game packages Poly Haven surfaces, original Blender props and Google-generated PA speech locally. No runtime asset API, speech service, key or backend is required. Earlier procedural/eSpeak versions remain in Git at `v0.4.0-beta`.
+Current build: **v0.4.4 POC, 2026-09-06**. The game packages Poly Haven surfaces, original Blender props and Google-generated PA speech locally. No runtime asset API, speech service, key or backend is required. Earlier procedural/eSpeak versions remain in Git at `v0.4.0-beta`.
 
 ## Environment and props
 
@@ -14,7 +14,8 @@ Current build: **v0.4.3 POC, 2026-09-06**. The game packages Poly Haven surfaces
 | Station shell, shelters, trains, shadow, purge unit and tokens | `src/world` | Original project geometry; shadow uses a generated contact texture | Environment and gameplay |
 | Signs, route graphics, changed poster, metal and concrete materials | `src/world` | Original canvas graphics and procedural materials | Exact clue lettering, world dressing and remaining surfaces |
 | Hum, interaction effects, tokens and purge | `src/audio/Audio.ts` | Original oscillator synthesis | Spatial effects and captioned events |
-| Shoe impacts/scuffs, horror bed, suspense strings and pulse | `src/audio/soundDesign.ts`, `src/audio/Soundscape.ts` | Original deterministic PCM synthesis; no sampled recording, external service or borrowed composition | Cached footfalls and stereo loops generated locally when audio starts |
+| Horror bed, suspense tones and airy pulse | `src/audio/soundDesign.ts`, `src/audio/Soundscape.ts` | Original deterministic PCM synthesis | Stereo loops generated locally after a gesture |
+| Concrete footsteps | [Kenney Impact Sounds 1.0](https://kenney.nl/assets/impact-sounds) | CC0; original OGGs, licence and hashes in `assets/source/audio` | Five local mono WAV variations used for both characters |
 | Evidence and PA scripts | `src/ui/notes.ts`, `src/audio/voices.ts` | Original project text | Readable clues and complete subtitles |
 
 Six 1024 × 1024 texture files total **2,578,167 bytes**. Colour and roughness use JPEG quality 2 / 4:4:4; normal maps use PNG. Colour maps are sRGB; normal/roughness maps use linear data and OpenGL normal conventions. Floor roughness is clamped to at least 150/255 during finishing to broaden station-light highlights. Material tints, normal intensity and physical repeats are set in `src/world/assets.ts`. The source and final checksums distinguish these derivatives from the downloaded originals.
@@ -59,3 +60,14 @@ Footfalls combine a descending low impact, short broadband heel contact and a de
 The background combines a slow low drone, filtered air and an upper whine. Suspense adds detuned harmonic clusters and a double pulse that accelerates from 48 toward 126 beats per active minute. Original tonal frequencies complete whole cycles across the loop; noise edges fade to avoid a discontinuity. Music intensity uses distance, pursuit, occlusion, concealment and recovery grace; it does not influence the enemy brain.
 
 Master volume defaults to 45%, effects 80%, music 65% and voices 100%. Audible announcements temporarily lower effects to 40% and music to 30% of the selected bus levels. Music and footsteps stop with the station context in menus; recovery clears tension and pending one-shots. Signal and lifecycle checks establish technical behavior, while perceived realism, suspense and headphone/speaker balance remain listening judgments for playtesting.
+
+
+## v0.4.4 listening correction — supersedes the synthesized footsteps above
+
+The user reported inaudible background sound and drum-like footsteps. The pitched footfall generator has been removed. Both characters now use `footstep_concrete_000` through `004` from Kenney's **Impact Sounds 1.0**, published under **CC0** on the [official asset page](https://kenney.nl/assets/impact-sounds). The downloaded [licence text](../assets/source/audio/kenney-impact-license.txt), original OGGs, exact archive/source/output SHA-256 hashes and conversion command are retained in [the manifest](../assets/source/audio/footsteps.json).
+
+The five shipped files in `public/audio/footsteps` total **24,062 bytes**. FFmpeg converts them to mono 22,050 Hz / 16-bit PCM WAV, removes sub-120-Hz rumble and limits peaks without automatic makeup gain. Contacts last 0.103–0.111 s. No generated bass impact is mixed into them. Enemy steps use the same concrete surface with a modest rate/gain change and existing HRTF/wall muffling.
+
+The background's midrange is strengthened, output calibration rises from 0.18 to 0.32, and the exploration-bed gain rises from 0.5 to 0.85. At default settings, calculated exploration RMS is about **9.1 dB higher**; speech calibration is **5 dB higher**. Peak compression controls overlap at high settings. The old bass double-hit music pulse is replaced by an airy swell. Exact measurements and limits are in [the comparison](audio-phase4d.json). This does not certify subjective quality.
+
+Three settings auditions play the foley, background and existing intro PA through the selected volumes. They use an independent short-lived context, keep the station paused, cancel on close/blur/settings changes and explain when a selected bus is muted. No Google request or new voice recording was made; original speech files and subtitles are unchanged.

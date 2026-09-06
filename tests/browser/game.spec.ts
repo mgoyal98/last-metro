@@ -16,6 +16,154 @@ async function start(page: Page) {
   await page.getByRole("button", { name: "ENTER THE STATION" }).click();
   await expect.poll(async () => (await snapshot(page)).active).toBe(true);
 }
+
+test("sound checks make background and PA audible without resuming the station and cancel on close or mute", async ({
+  page,
+}) => {
+  test.setTimeout(120000);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.addInitScript(() => {
+    (window as any).__checkContexts = [];
+    const Context = window.AudioContext;
+    window.AudioContext = class extends Context {
+      gains: GainNode[] = [];
+      constructor(...args: ConstructorParameters<typeof AudioContext>) {
+        super(...args);
+        (window as any).__checkContexts.push(this);
+      }
+      createGain() {
+        const gain = super.createGain();
+        this.gains.push(gain);
+        return gain;
+      }
+    };
+  });
+  await start(page);
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "SETTINGS", exact: true }).click();
+  const paused = await snapshot(page);
+  const stationTime = await page.evaluate(
+    () => (window as any).__checkContexts[0].currentTime,
+  );
+  const status = page.locator("#sound-check-status");
+  await page
+    .getByRole("button", { name: "Test background", exact: true })
+    .click();
+  await expect(status).toContainText("Background:");
+  await page.evaluate(() => {
+    const ctx = (window as any).__checkContexts[1];
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 2048;
+    ctx.gains[0].connect(analyser);
+    (window as any).__checkLevel = () => {
+      const values = new Float32Array(2048);
+      analyser.getFloatTimeDomainData(values);
+      return Math.sqrt(
+        values.reduce((sum, value) => sum + value * value, 0) / values.length,
+      );
+    };
+  });
+  await expect
+    .poll(() => page.evaluate(() => (window as any).__checkLevel()))
+    .toBeGreaterThan(0.006);
+  expect((await snapshot(page)).elapsed).toBe(paused.elapsed);
+  expect(
+    await page.evaluate(() => (window as any).__checkContexts[0].currentTime),
+  ).toBe(stationTime);
+  await page
+    .getByRole("button", { name: "Test PA voice", exact: true })
+    .click();
+  await expect(status).toContainText("For your safety");
+  await expect
+    .poll(() => page.evaluate(() => (window as any).__checkLevel()))
+    .toBeGreaterThan(0.012);
+  await page
+    .getByRole("button", { name: "Test footsteps", exact: true })
+    .click();
+  await expect(status).toContainText("two player steps");
+  await page.getByRole("button", { name: "Stop", exact: true }).click();
+  await expect
+    .poll(() => page.evaluate(() => (window as any).__checkContexts[1].state))
+    .toBe("suspended");
+  let releaseVoice!: () => void;
+  await page.route("**/audio/intro.wav", async (route) => {
+    await new Promise<void>((resolve) => {
+      releaseVoice = resolve;
+    });
+    await route.continue();
+  });
+  await page
+    .getByRole("button", { name: "Test PA voice", exact: true })
+    .click();
+  await expect.poll(() => typeof releaseVoice).toBe("function");
+  await page.getByRole("button", { name: "Stop", exact: true }).click();
+  releaseVoice();
+  await page.waitForTimeout(250);
+  await expect(status).toHaveText("Sound check stopped.");
+  await expect
+    .poll(() => page.evaluate(() => (window as any).__checkContexts[1].state))
+    .toBe("suspended");
+  await page.unroute("**/audio/intro.wav");
+  const volume = page.getByLabel("Music and suspense volume", { exact: true });
+  await volume.focus();
+  await page.keyboard.press("Home");
+  await page
+    .getByRole("button", { name: "Test background", exact: true })
+    .click();
+  await expect(status).toContainText("muted");
+  await expect
+    .poll(() => page.evaluate(() => (window as any).__checkContexts[1].state))
+    .toBe("suspended");
+  await page
+    .getByRole("button", { name: "Test PA voice", exact: true })
+    .click();
+  await expect(status).toContainText("For your safety");
+  await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as any).__checkContexts.every(
+          (ctx: AudioContext) => ctx.state === "suspended",
+        ),
+      ),
+    )
+    .toBe(true);
+  await page
+    .getByRole("button", { name: "Test PA voice", exact: true })
+    .click();
+  await expect(status).toContainText("For your safety");
+  await page.getByRole("button", { name: "DONE", exact: true }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as any).__checkContexts.every(
+          (ctx: AudioContext) => ctx.state === "suspended",
+        ),
+      ),
+    )
+    .toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test("a missing footstep file exposes startup recovery and reload restores the foley bank", async ({
+  page,
+}) => {
+  await page.route("**/audio/footsteps/concrete-0.wav", (route) =>
+    route.fulfill({ status: 503, body: "Unavailable" }),
+  );
+  await page.goto("/?test");
+  await expect(
+    page.getByRole("button", { name: "RELOAD STATION", exact: true }),
+  ).toBeVisible();
+  await page.unroute("**/audio/footsteps/concrete-0.wav");
+  await page
+    .getByRole("button", { name: "RELOAD STATION", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "ENTER THE STATION", exact: true }),
+  ).toBeVisible();
+});
 async function holdForSimulation(
   page: Page,
   key: string,

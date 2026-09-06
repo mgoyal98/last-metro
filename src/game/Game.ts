@@ -36,6 +36,8 @@ import type { Point } from "./navigation";
 import { VOICES } from "../audio/voices";
 import { loadStationAssets } from "../world/assets";
 import { GAITS } from "../audio/soundDesign";
+import { loadFootsteps } from "../audio/footsteps";
+import { SoundCheck } from "../audio/SoundCheck";
 
 export class Game {
   private readonly renderer: WebGLRenderer;
@@ -45,7 +47,8 @@ export class Game {
     0.08,
     90,
   );
-  private readonly audio = new StationAudio();
+  private readonly audio: StationAudio;
+  private readonly soundCheck: SoundCheck;
   private readonly panelAudio = new PanelAudio();
   private fusePanel = freshFusePanel();
   private pendingPowerCue = false;
@@ -103,7 +106,13 @@ export class Game {
   private averageFrame = 0;
   private saved = loadProgress();
 
-  private constructor(canvas: HTMLCanvasElement, station: Station) {
+  private constructor(
+    canvas: HTMLCanvasElement,
+    station: Station,
+    footsteps: Float32Array[],
+  ) {
+    this.audio = new StationAudio(footsteps);
+    this.soundCheck = new SoundCheck(footsteps);
     this.renderer = new WebGLRenderer({
       canvas,
       antialias: true,
@@ -125,6 +134,10 @@ export class Game {
     this.show("loading");
     this.ui.onAction = (action) => this.action(action);
     this.ui.onSettings = (key, value) => {
+      this.soundCheck.stop();
+      this.ui.soundCheckStatus(
+        "Sound check stopped. Play a sample to hear the updated level.",
+      );
       this.settings = { ...this.settings, [key]: value };
       storeSettings(this.settings);
       this.applySettings();
@@ -145,16 +158,17 @@ export class Game {
     canvas: HTMLCanvasElement,
     stage: (text: string) => void = () => {},
   ): Promise<Game> {
-    stage("Loading station surfaces, props and collision…");
-    const [physics, assets] = await Promise.all([
+    stage("Loading station surfaces, props, sound and collision…");
+    const [physics, assets, footsteps] = await Promise.all([
       initializePhysics(),
       loadStationAssets(),
+      loadFootsteps(),
     ]);
     stage("Lighting the station…");
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => resolve()),
     );
-    const game = new Game(canvas, new Station(physics, assets));
+    const game = new Game(canvas, new Station(physics, assets), footsteps);
     game.station.scene.updateMatrixWorld(true);
     // Prepare both light configurations before accepting player input.
     await game.renderer.compileAsync(game.station.scene, game.camera);
@@ -198,6 +212,7 @@ export class Game {
     });
     window.addEventListener("pagehide", () => {
       this.panelAudio.stop();
+      this.soundCheck.stop();
       if (this.started) this.persist();
     });
     document.addEventListener("pointerlockchange", () => {
@@ -363,6 +378,25 @@ export class Game {
       case "settings-back":
         this.show(this.settingsReturn);
         break;
+      case "sound-check:steps":
+      case "sound-check:background":
+      case "sound-check:voice": {
+        if (this.ui.screen !== "settings") return;
+        const kind =
+          action === "sound-check:steps"
+            ? "steps"
+            : action === "sound-check:voice"
+              ? "voice"
+              : "background";
+        void this.soundCheck.play(kind, this.settings, (text) =>
+          this.ui.soundCheckStatus(text),
+        );
+        break;
+      }
+      case "sound-check:stop":
+        this.soundCheck.stop();
+        this.ui.soundCheckStatus("Sound check stopped.");
+        break;
       case "title":
         this.started = false;
         this.saved = this.saved ?? loadProgress();
@@ -444,6 +478,7 @@ export class Game {
   }
   private show(screen: Screen, note?: string): void {
     this.panelAudio.stop();
+    this.soundCheck.stop();
     if (this.active && this.started && screen !== "playing") this.persist();
     this.active = screen === "playing";
     if (!this.active) {
@@ -494,6 +529,8 @@ export class Game {
   }
   private pause(): void {
     this.panelAudio.stop();
+    this.soundCheck.stop();
+    this.ui.soundCheckStatus("Sound check stopped.");
     if (this.active) this.show("pause");
   }
   private handleFuseAction(action: string): void {

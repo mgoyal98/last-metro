@@ -1,0 +1,52 @@
+{
+  "provider": "Kenney",
+  "pack": "Impact Sounds 1.0",
+  "page": "https://kenney.nl/assets/impact-sounds",
+  "download": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+  "license": "CC0-1.0",
+  "archiveSha256": "029d734af1582474edf3a694d1b0cebc97c1c152f2f39fa34d4c2bafc5de77f8",
+  "date": "2026-09-06",
+  "processing": "FFmpeg highpass=f=120,alimiter=limit=0.7:level=0; mono 22050 Hz PCM 16-bit; no synthesized impact added",
+  "files": [
+    {
+      "source": "assets/source/audio/footstep_concrete_000.ogg",
+      "sourceSha256": "d7267e183067757c92c169de2a379abea592cfca6b39bb2e8feea15221ad79fe",
+      "file": "public/audio/footsteps/concrete-0.wav",
+      "sha256": "f21e72d606d5c3c112ddebf852a2b317f1dbd91527f3cd41521a9bfcb2bac5e8",
+      "bytes": 4622,
+      "seconds": 0.10303854875283447
+    },
+    {
+      "source": "assets/source/audio/footstep_concrete_001.ogg",
+      "sourceSha256": "507a75eb19b897087855a3be3cf11a12d7fa37d143ad535eeebe0b8031c7325d",
+      "file": "public/audio/footsteps/concrete-1.wav",
+      "sha256": "59b6b71a9d30bb1aea15f2f2e6506cefa32ea0aae390faf9e753ba2a726634c4",
+      "bytes": 4698,
+      "seconds": 0.10476190476190476
+    },
+    {
+      "source": "assets/source/audio/footstep_concrete_002.ogg",
+      "sourceSha256": "b21fa546d74941196b25da8a20b7010abd8c05c4fcf93545d1f344e66a664e13",
+      "file": "public/audio/footsteps/concrete-2.wav",
+      "sha256": "97a2d029f2fdf3df961dfbeb49c746582a800a753a519a3101f704a621179022",
+      "bytes": 4924,
+      "seconds": 0.10988662131519275
+    },
+    {
+      "source": "assets/source/audio/footstep_concrete_003.ogg",
+      "sourceSha256": "8b513c2f0316324060b9174b8f28df6c2147418c506e6a53b77f18e149a5547b",
+      "file": "public/audio/footsteps/concrete-3.wav",
+      "sha256": "a7b3019169457ff98102a30c0056227ddfd21d1477f0f1f557e4343da42a7639",
+      "bytes": 4824,
+      "seconds": 0.10761904761904761
+    },
+    {
+      "source": "assets/source/audio/footstep_concrete_004.ogg",
+      "sourceSha256": "24dd8db2413e5b81ad181e1205c12a1c7801da5f85715d471b92a4b2f632e45e",
+      "file": "public/audio/footsteps/concrete-4.wav",
+      "sha256": "0bef905a9e25b2c4f884ab1a2d2eebe592d0d2b8a231b27c3bdc807f60e4afcb",
+      "bytes": 4994,
+      "seconds": 0.11147392290249433
+    }
+  ]
+}

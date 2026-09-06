@@ -18,6 +18,16 @@ function harness() {
     resume = vi.fn(async () => {});
     suspend = vi.fn(async () => {});
     decodeAudioData = vi.fn(async () => ({ duration: 4 }));
+    createDynamicsCompressor() {
+      return {
+        threshold: param(),
+        knee: param(),
+        ratio: param(),
+        attack: param(),
+        release: param(),
+        connect: (node: unknown) => node,
+      };
+    }
     createBuffer(channels: number, length: number, sampleRate: number) {
       const data = Array.from(
         { length: channels },
@@ -91,7 +101,11 @@ function harness() {
       arrayBuffer: async () => new ArrayBuffer(8),
     })),
   );
-  return { audio: new StationAudio(), gains, sources };
+  return {
+    audio: new StationAudio([new Float32Array(100).fill(0.2)]),
+    gains,
+    sources,
+  };
 }
 
 it("restores the master gain when resuming after a note or pause", async () => {
@@ -103,7 +117,7 @@ it("restores the master gain when resuming after a note or pause", async () => {
   expect(gains[0].gain.setTargetAtTime).toHaveBeenLastCalledWith(0, 0, 0.08);
   await audio.start();
   expect(gains[0].gain.setTargetAtTime).toHaveBeenLastCalledWith(
-    0.7 * 0.18,
+    0.7 * 0.32,
     0,
     0.08,
   );
